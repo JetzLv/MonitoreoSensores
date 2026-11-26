@@ -21,8 +21,8 @@ Los servicios `mongo`, `rabbitmq` y `postgres` deben aparecer como `healthy`; `a
 |---|---|
 | Swagger (API) | http://localhost:8000/docs |
 | Panel de RabbitMQ | http://localhost:15672 |
-| MongoDB | mongodb://localhost:27017 |
-| PostgreSQL | postgresql://localhost:5432/iot_gestion |
+| MongoDB | mongodb://localhost:27018 |
+| PostgreSQL | postgresql://localhost:5433/iot_gestion |
 
 Todos los puertos escuchan solo en `127.0.0.1`: no son accesibles desde otros equipos de la red.
 
