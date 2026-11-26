@@ -15,13 +15,25 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Los servicios `mongo` y `rabbitmq` deben aparecer como `healthy`; `api`, `worker` y `simulator` como `running`.
+Los servicios `mongo`, `rabbitmq` y `postgres` deben aparecer como `healthy`; `api`, `worker` y `simulator` como `running`.
 
 | Servicio | URL |
 |---|---|
 | Swagger (API) | http://localhost:8000/docs |
 | Panel de RabbitMQ | http://localhost:15672 |
 | MongoDB | mongodb://localhost:27017 |
+| PostgreSQL | postgresql://localhost:5432/iot_gestion |
+
+Todos los puertos escuchan solo en `127.0.0.1`: no son accesibles desde otros equipos de la red.
+
+## Acceso público con Cloudflare Tunnel
+
+```bash
+docker compose --profile tunel up -d
+docker compose logs tunel
+```
+
+En los logs aparece una dirección `https://<aleatorio>.trycloudflare.com`. Cambia en cada reinicio del túnel.
 
 ## Pruebas
 
@@ -29,6 +41,11 @@ Los servicios `mongo` y `rabbitmq` deben aparecer como `healthy`; `api`, `worker
 pip install -r api/requirements.txt pytest httpx
 pytest
 ```
+
+## Documentación
+
+- `docs/DISENO.md`: sistema de diseño de la interfaz.
+- `docs/diagramas/`: arquitectura, despliegue, DER y clases (fuentes `.dot` y PNG).
 
 ## Notas
 

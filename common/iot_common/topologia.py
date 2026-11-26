@@ -16,7 +16,7 @@ async def declarar(channel: AbstractChannel) -> dict:
     eventos = await channel.declare_exchange(EX_EVENTOS, aio_pika.ExchangeType.TOPIC, durable=True)
 
     q_ingesta = await channel.declare_queue(Q_INGESTA, durable=True, arguments={"x-dead-letter-exchange": EX_DLX})
-    q_errores = await channel.declare_queue(Q_ERRORES, durable=True)
+    q_errores = await channel.declare_queue(Q_ERRORES, durable=True, arguments={"x-max-length": 1000})
     q_notif = await channel.declare_queue(Q_NOTIFICACIONES, durable=True)
 
     await q_ingesta.bind(telemetria, "lectura.#")

@@ -1,0 +1,19 @@
+digraph DER {
+rankdir=LR; graph [fontname="Helvetica", nodesep=0.5, ranksep=0.9, bgcolor="white"];
+node [shape=plain, fontname="Helvetica", fontsize=10];
+edge [fontname="Helvetica", fontsize=9, color="#475569", arrowhead=crow, arrowtail=tee, dir=both];
+rol [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4"><tr><td bgcolor="#1E293B"><font color="white"><b>rol</b></font></td></tr><tr><td align="left"><b>PK</b> id_rol SMALLINT</td></tr><tr><td align="left">nombre VARCHAR(30) UNIQUE</td></tr><tr><td align="left">descripcion VARCHAR(120)</td></tr></table>>];
+usuario [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4"><tr><td bgcolor="#1E293B"><font color="white"><b>usuario</b></font></td></tr><tr><td align="left"><b>PK</b> id_usuario INT</td></tr><tr><td align="left">nombre VARCHAR(80)</td></tr><tr><td align="left">correo VARCHAR(120) UNIQUE</td></tr><tr><td align="left">hash_password VARCHAR(255)</td></tr><tr><td align="left"><b>FK</b> id_rol</td></tr><tr><td align="left">activo BOOLEAN</td></tr><tr><td align="left">creado_en TIMESTAMPTZ</td></tr></table>>];
+prioridad [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4"><tr><td bgcolor="#1E293B"><font color="white"><b>prioridad</b></font></td></tr><tr><td align="left"><b>PK</b> id_prioridad SMALLINT</td></tr><tr><td align="left">nombre VARCHAR(20) UNIQUE</td></tr><tr><td align="left">sla_horas SMALLINT</td></tr></table>>];
+estado [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4"><tr><td bgcolor="#1E293B"><font color="white"><b>estado_ticket</b></font></td></tr><tr><td align="left"><b>PK</b> id_estado SMALLINT</td></tr><tr><td align="left">nombre VARCHAR(20) UNIQUE</td></tr><tr><td align="left">es_final BOOLEAN</td></tr></table>>];
+ticket [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4"><tr><td bgcolor="#1E293B"><font color="white"><b>ticket</b></font></td></tr><tr><td align="left"><b>PK</b> id_ticket INT</td></tr><tr><td align="left">folio VARCHAR(20) UNIQUE</td></tr><tr><td align="left">titulo VARCHAR(120)</td></tr><tr><td align="left">descripcion TEXT</td></tr><tr><td align="left">sensor_id VARCHAR(10)  (ref. MongoDB)</td></tr><tr><td align="left">alerta_id CHAR(24) NULL  (ref. MongoDB)</td></tr><tr><td align="left"><b>FK</b> id_prioridad</td></tr><tr><td align="left"><b>FK</b> id_estado</td></tr><tr><td align="left"><b>FK</b> id_creador → usuario</td></tr><tr><td align="left"><b>FK</b> id_asignado → usuario NULL</td></tr><tr><td align="left">creado_en, actualizado_en TIMESTAMPTZ</td></tr><tr><td align="left">resuelto_en TIMESTAMPTZ NULL</td></tr></table>>];
+historial [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4"><tr><td bgcolor="#1E293B"><font color="white"><b>historial_ticket</b></font></td></tr><tr><td align="left"><b>PK</b> id_historial INT</td></tr><tr><td align="left"><b>FK</b> id_ticket</td></tr><tr><td align="left"><b>FK</b> id_usuario</td></tr><tr><td align="left"><b>FK</b> id_estado_anterior NULL</td></tr><tr><td align="left"><b>FK</b> id_estado_nuevo</td></tr><tr><td align="left">comentario TEXT</td></tr><tr><td align="left">creado_en TIMESTAMPTZ</td></tr></table>>];
+rol -> usuario [label="1 : N"];
+usuario -> ticket [label="crea 1 : N"];
+usuario -> ticket [label="atiende 1 : N"];
+prioridad -> ticket [label="1 : N"];
+estado -> ticket [label="1 : N"];
+ticket -> historial [label="1 : N"];
+usuario -> historial [label="1 : N"];
+estado -> historial [label="1 : N"];
+}

@@ -1,0 +1,25 @@
+digraph G {
+rankdir=LR; bgcolor="white"; fontname="Helvetica"; compound=true; nodesep=0.35; ranksep=0.7;
+node [shape=box, style="rounded,filled", fillcolor="#F4F6F8", color="#5A6B7B", fontname="Helvetica", fontsize=11];
+edge [color="#5A6B7B", fontname="Helvetica", fontsize=9];
+user [label="Usuarios\nadmin · monitorista · soporte", shape=box, fillcolor="#FFFFFF"];
+subgraph cluster_front { label="Interfaz web (React + Vite)"; style=rounded; color="#0EA5E9"; fontcolor="#0369A1";
+  ui [label="Dashboard · Sensores · Alertas\nTickets · Bandeja de mensajes", fillcolor="#E0F2FE"]; }
+subgraph cluster_api { label="API FastAPI"; style=rounded; color="#1E293B";
+  auth [label="Autenticación JWT\n(cookie httpOnly) y roles"];
+  iot [label="Rutas IoT\nsensores · lecturas · alertas · reportes"];
+  tk [label="Rutas de gestión\nusuarios · tickets · mensajes"]; }
+sim [label="Simulador\n30 sensores"];
+subgraph cluster_r { label="RabbitMQ"; style=rounded; color="#C9772E"; fontcolor="#C9772E";
+  tel [label="telemetria"]; ev [label="eventos\nalerta.* · sensor.inactivo · ticket.*"]; err [label="q.ingesta.errores\n(máx. 1000)"]; }
+w [label="Worker\ningesta · reglas · detector de inactivos\nnotificaciones · resumen", fillcolor="#E3ECF5"];
+subgraph cluster_m { label="MongoDB (NoSQL)"; style=rounded; color="#2E7D4F"; fontcolor="#2E7D4F";
+  mdat [label="sensores · lecturas (time series)\nalertas · resumen_horario"]; mmsg [label="mensajes\n(bandeja, TTL 30 d)"]; }
+subgraph cluster_p { label="PostgreSQL (SQL, 3FN)"; style=rounded; color="#7C3AED"; fontcolor="#6D28D9";
+  pg [label="rol · usuario · ticket\nestado_ticket · prioridad · historial_ticket", fillcolor="#EDE9FE"]; }
+user -> ui [label="navegador"]; ui -> auth [label="HTTPS / JSON\npolling 10 s"];
+auth -> iot [style=invis]; auth -> pg [label="valida usuario"];
+iot -> mdat; tk -> pg [label="tickets"]; tk -> mmsg [label="bandeja"]; tk -> ev [label="ticket.creado"];
+sim -> tel; tel -> w; w -> err [style=dashed, label="inválidos"]; w -> mdat; w -> ev [label="alerta / inactivo"];
+ev -> w [label="consume eventos"]; w -> mmsg [label="mensaje a bandeja"];
+}

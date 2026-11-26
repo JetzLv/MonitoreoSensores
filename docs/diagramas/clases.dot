@@ -1,0 +1,23 @@
+digraph C {
+rankdir=TB; bgcolor="white"; fontname="Helvetica"; nodesep=0.4; ranksep=0.6;
+node [shape=record, fontname="Helvetica", fontsize=10, style=filled, fillcolor="#FFFFFF", color="#475569"];
+edge [fontname="Helvetica", fontsize=9, color="#475569"];
+Rol [label="{Rol|+ id: int\l+ nombre: str\l}"];
+Usuario [label="{Usuario|+ id: int\l+ nombre: str\l+ correo: str\l- hash_password: str\l+ activo: bool\l|+ verificar_password()\l+ puede(accion): bool\l}"];
+Ticket [label="{Ticket|+ folio: str\l+ titulo: str\l+ sensor_id: str\l+ prioridad: Prioridad\l+ estado: EstadoTicket\l|+ asignar(usuario)\l+ cambiar_estado(nuevo, comentario)\l+ vencido(): bool\l}"];
+Historial [label="{HistorialTicket|+ estado_anterior\l+ estado_nuevo\l+ comentario: str\l+ creado_en: datetime\l}"];
+Prioridad [label="{Prioridad|+ nombre: str\l+ sla_horas: int\l}"];
+Estado [label="{EstadoTicket|+ nombre: str\l+ es_final: bool\l}"];
+Mensaje [label="{Mensaje «MongoDB»|+ asunto: str\l+ cuerpo: str\l+ tipo: str\l+ para_rol: str\l+ referencia: dict\l+ leido_por: list\l|+ marcar_leido(usuario)\l}"];
+Sensor [label="{Sensor «MongoDB»|+ id: str\l+ tipo: str\l+ ubicacion: Ubicacion\l+ umbrales: dict\l+ estado: str\l}"];
+Lectura [label="{Lectura «time series»|+ ts: datetime\l+ valores: dict\l}"];
+Alerta [label="{Alerta «MongoDB»|+ metrica: str\l+ valor: float\l+ severidad: str\l+ estado: str\l|+ atender(usuario)\l}"];
+Rol -> Usuario [arrowhead=odiamond, dir=back, label="1   *"];
+Usuario -> Ticket [label="crea / atiende  1   *"];
+Ticket -> Historial [arrowhead=diamond, dir=back, arrowtail=diamond, label="1   *"];
+Ticket -> Prioridad [label="*   1"]; Ticket -> Estado [label="*   1"];
+Sensor -> Lectura [label="1   *"]; Sensor -> Alerta [label="1   *"];
+Ticket -> Sensor [style=dashed, label="referencia por id"];
+Ticket -> Alerta [style=dashed, label="origen opcional"];
+Mensaje -> Ticket [style=dashed, label="referencia"]; Mensaje -> Sensor [style=dashed, label="referencia"];
+}
