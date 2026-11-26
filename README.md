@@ -23,7 +23,7 @@ Los servicios `mongo`, `rabbitmq` y `postgres` deben aparecer como `healthy`; `a
 | Panel de RabbitMQ | http://localhost:15672 |
 | MongoDB | mongodb://localhost:27018 |
 
-PostgreSQL no publica puerto; se consulta con `docker compose exec postgres psql -U pg_admin -d iot_gestion`.
+PostgreSQL no publica puerto; se consulta con `docker compose exec postgres psql -U gestion_admin -d iot_gestion`.
 
 Los puertos publicados escuchan solo en `127.0.0.1`: no son accesibles desde otros equipos de la red.
 
