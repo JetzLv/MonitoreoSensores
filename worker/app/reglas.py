@@ -19,5 +19,5 @@ def evaluar(valores: dict[str, float], umbrales: dict[str, dict]) -> list[dict]:
             umbral, exceso = limite["min"], (limite["min"] - valor) / ancho
         else:
             continue
-        alertas.append({"metrica": metrica, "valor": valor, "umbral": umbral, "severidad": severidad(exceso)})
+        alertas.append({"metrica": metrica, "valor": round(valor, 2), "umbral": umbral, "severidad": severidad(exceso)})
     return alertas
