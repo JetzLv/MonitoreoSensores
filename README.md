@@ -15,17 +15,18 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Los servicios `mongo` y `rabbitmq` deben aparecer como `healthy`; `worker` y `simulator` como `running`.
+Los servicios `mongo` y `rabbitmq` deben aparecer como `healthy`; `api`, `worker` y `simulator` como `running`.
 
 | Servicio | URL |
 |---|---|
+| Swagger (API) | http://localhost:8000/docs |
 | Panel de RabbitMQ | http://localhost:15672 |
 | MongoDB | mongodb://localhost:27017 |
 
 ## Pruebas
 
 ```bash
-pip install -r worker/requirements.txt pytest
+pip install -r api/requirements.txt pytest httpx
 pytest
 ```
 
