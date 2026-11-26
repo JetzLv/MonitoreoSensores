@@ -2,14 +2,14 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
-from ..dependencias import autorizar, cualquier_usuario, get_db
+from ..dependencias import autorizar, cualquier_usuario, obtener_db
 from ..repositories import lecturas as repo_lecturas
 from ..repositories import sensores as repo
 from ..schemas.comun import errores
 from ..schemas.lecturas import Lectura
 from ..schemas.sensores import Estado, Sensor, SensorActualizar, SensorCrear, Tipo, validar_umbrales
 
-router = APIRouter(prefix="/sensores", tags=["Sensores"], dependencies=[Depends(cualquier_usuario)])
+enrutador = APIRouter(prefix="/sensores", tags=["Sensores"], dependencies=[Depends(cualquier_usuario)])
 solo_admin = autorizar("administrador")
 
 
@@ -20,31 +20,31 @@ async def _existente(db, sensor_id: str) -> dict:
     return sensor
 
 
-@router.post("", status_code=201, response_model=Sensor, summary="Registrar sensor",
+@enrutador.post("", status_code=201, response_model=Sensor, summary="Registrar sensor",
              dependencies=[Depends(solo_admin)], responses=errores(401, 403, 409))
-async def crear(datos: SensorCrear, db=Depends(get_db)):
+async def crear(datos: SensorCrear, db=Depends(obtener_db)):
     sensor = await repo.crear(db, datos.model_dump())
     if not sensor:
         raise HTTPException(status.HTTP_409_CONFLICT, f"El sensor {datos.id} ya existe")
     return sensor
 
 
-@router.get("", response_model=list[Sensor], summary="Listar sensores con filtros")
-async def listar(db=Depends(get_db), tipo: Tipo | None = None, estado: Estado | None = None,
+@enrutador.get("", response_model=list[Sensor], summary="Listar sensores con filtros")
+async def listar(db=Depends(obtener_db), tipo: Tipo | None = None, estado: Estado | None = None,
                  edificio: str | None = Query(None, max_length=20),
                  saltar: int = Query(0, ge=0), limite: int = Query(50, ge=1, le=100)):
     filtros = {k: v for k, v in {"tipo": tipo, "estado": estado, "ubicacion.edificio": edificio}.items() if v}
     return await repo.listar(db, filtros, saltar, limite)
 
 
-@router.get("/{sensor_id}", response_model=Sensor, summary="Consultar sensor", responses=errores(401, 404))
-async def obtener(sensor_id: str, db=Depends(get_db)):
+@enrutador.get("/{sensor_id}", response_model=Sensor, summary="Consultar sensor", responses=errores(401, 404))
+async def obtener(sensor_id: str, db=Depends(obtener_db)):
     return await _existente(db, sensor_id)
 
 
-@router.patch("/{sensor_id}", response_model=Sensor, summary="Actualizar umbrales o estado",
+@enrutador.patch("/{sensor_id}", response_model=Sensor, summary="Actualizar umbrales o estado",
               dependencies=[Depends(solo_admin)], responses=errores(401, 403, 404))
-async def actualizar(sensor_id: str, datos: SensorActualizar, db=Depends(get_db)):
+async def actualizar(sensor_id: str, datos: SensorActualizar, db=Depends(obtener_db)):
     sensor = await _existente(db, sensor_id)
     cambios = datos.model_dump(exclude_none=True)
     if not cambios:
@@ -57,17 +57,17 @@ async def actualizar(sensor_id: str, datos: SensorActualizar, db=Depends(get_db)
     return await repo.actualizar(db, sensor_id, cambios)
 
 
-@router.delete("/{sensor_id}", status_code=204, summary="Baja lógica; conserva su historial",
+@enrutador.delete("/{sensor_id}", status_code=204, summary="Baja lógica; conserva su historial",
                dependencies=[Depends(solo_admin)], responses=errores(401, 403, 404))
-async def dar_de_baja(sensor_id: str, db=Depends(get_db)):
+async def dar_de_baja(sensor_id: str, db=Depends(obtener_db)):
     await _existente(db, sensor_id)
     await repo.actualizar(db, sensor_id, {"estado": "baja"})
     return Response(status_code=204)
 
 
-@router.get("/{sensor_id}/lecturas", response_model=list[Lectura], summary="Lecturas por rango de fechas",
+@enrutador.get("/{sensor_id}/lecturas", response_model=list[Lectura], summary="Lecturas por rango de fechas",
             description="Sin fechas devuelve la última hora. Orden descendente por fecha.", responses=errores(404))
-async def lecturas(sensor_id: str, db=Depends(get_db), desde: datetime | None = None, hasta: datetime | None = None,
+async def lecturas(sensor_id: str, db=Depends(obtener_db), desde: datetime | None = None, hasta: datetime | None = None,
                    limite: int = Query(500, ge=1, le=5000)):
     await _existente(db, sensor_id)
     hasta = hasta or datetime.now(timezone.utc)
@@ -75,8 +75,8 @@ async def lecturas(sensor_id: str, db=Depends(get_db), desde: datetime | None = 
     return await repo_lecturas.por_rango(db, sensor_id, desde, hasta, limite)
 
 
-@router.get("/{sensor_id}/lecturas/ultima", response_model=Lectura, summary="Última lectura", responses=errores(404))
-async def ultima(sensor_id: str, db=Depends(get_db)):
+@enrutador.get("/{sensor_id}/lecturas/ultima", response_model=Lectura, summary="Última lectura", responses=errores(404))
+async def ultima(sensor_id: str, db=Depends(obtener_db)):
     await _existente(db, sensor_id)
     lectura = await repo_lecturas.ultima(db, sensor_id)
     if not lectura:

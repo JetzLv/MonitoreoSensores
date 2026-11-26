@@ -7,12 +7,12 @@ from iot_common.mensajes import EventoMensaje
 
 
 def crear_consumidor(db):
-    async def recibir(message: AbstractIncomingMessage):
+    async def recibir(mensaje_amqp: AbstractIncomingMessage):
         try:
-            e = EventoMensaje.model_validate_json(message.body)
+            e = EventoMensaje.model_validate_json(mensaje_amqp.body)
         except ValidationError:
-            await message.reject(requeue=False)
+            await mensaje_amqp.reject(requeue=False)
             return
-        async with message.process(requeue=True):
+        async with mensaje_amqp.process(requeue=True):
             await db.mensajes.insert_one({**e.model_dump(), "leido_por": [], "creado_en": datetime.now(timezone.utc)})
     return recibir

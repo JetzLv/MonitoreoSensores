@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from iot_common import publicar
 from iot_common.mensajes import EventoMensaje, Remitente
 
-log = logging.getLogger("inactivos")
+registro = logging.getLogger("inactivos")
 
 UMBRAL_MINUTOS = 2
 INTERVALO_SEGUNDOS = 60
@@ -42,4 +42,4 @@ async def ciclo(db, eventos):
                     asunto=f"{s} volvió a reportar", cuerpo=f"El sensor {s} reanudó el envío de lecturas."))
             caidos = ((caidos | nuevos) - recuperados) & set(activos)
         except Exception:
-            log.exception("Fallo el detector de inactivos")
+            registro.exception("Fallo el detector de inactivos")

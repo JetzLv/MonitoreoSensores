@@ -9,7 +9,7 @@ os.environ.setdefault("JWT_SECRET", "secreto-de-prueba")
 import pytest
 from fastapi.testclient import TestClient
 
-from api.app.main import app
+from api.app.main import aplicacion
 
 SENSOR = {"id": "TMP-099", "tipo": "temperatura", "ubicacion": {"edificio": "A", "piso": 1, "zona": "Norte"},
           "umbrales": {"temp_c": {"min": 15, "max": 30}, "humedad_pct": {"min": 20, "max": 70}}}
@@ -18,8 +18,8 @@ CLAVE = {"X-API-Key": "clave-de-prueba"}
 
 @pytest.fixture(scope="module")
 def cliente():
-    app.state.db = app.state.pg = app.state.eventos = None
-    return TestClient(app)
+    aplicacion.state.db = aplicacion.state.pg = aplicacion.state.eventos = None
+    return TestClient(aplicacion)
 
 
 def test_swagger_documenta_todos_los_endpoints(cliente):

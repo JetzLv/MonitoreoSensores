@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
 
-class Error(BaseModel):
+class ErrorRespuesta(BaseModel):
     detail: str
 
 
 def errores(*codigos: int) -> dict:
-    return {c: {"model": Error} for c in codigos}
+    return {c: {"model": ErrorRespuesta} for c in codigos}

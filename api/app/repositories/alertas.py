@@ -16,14 +16,14 @@ async def listar(db, filtros: dict, limite: int) -> list[dict]:
 
 async def atender(db, alerta_id: str, atendida_por: str) -> tuple[str, dict | None]:
     try:
-        oid = ObjectId(alerta_id)
+        id_objeto = ObjectId(alerta_id)
     except InvalidId:
         return "no_existe", None
-    res = await db.alertas.update_one(
-        {"_id": oid, "estado": "abierta"},
+    resultado = await db.alertas.update_one(
+        {"_id": id_objeto, "estado": "abierta"},
         {"$set": {"estado": "atendida", "atendida_por": atendida_por, "atendida_en": datetime.now(timezone.utc)}},
     )
-    doc = await db.alertas.find_one({"_id": oid})
+    doc = await db.alertas.find_one({"_id": id_objeto})
     if not doc:
         return "no_existe", None
-    return ("ok" if res.modified_count else "ya_atendida"), _salida(doc)
+    return ("ok" if resultado.modified_count else "ya_atendida"), _salida(doc)

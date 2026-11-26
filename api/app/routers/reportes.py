@@ -6,43 +6,43 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from iot_common.mensajes import RANGOS_FISICOS
 
 from ..csv_util import respuesta_csv
-from ..dependencias import cualquier_usuario, get_db
+from ..dependencias import cualquier_usuario, obtener_db
 from ..repositories import reportes as repo
 from ..repositories import sensores as repo_sensores
 from ..schemas.comun import errores
 from ..schemas.reportes import AlertasPorUbicacion, EstadoSensor, PuntoTendencia, ResumenHorario, SensorInactivo
 
-router = APIRouter(prefix="/reportes", tags=["Reportes"], dependencies=[Depends(cualquier_usuario)])
+enrutador = APIRouter(prefix="/reportes", tags=["Reportes"], dependencies=[Depends(cualquier_usuario)])
 Formato = Literal["json", "csv"]
-CSV = {200: {"content": {"text/csv": {}}, "description": "JSON o CSV según el parámetro formato"}}
+RESPUESTA_CSV = {200: {"content": {"text/csv": {}}, "description": "JSON o CSV según el parámetro formato"}}
 
 
-@router.get("/resumen-horario", response_model=list[ResumenHorario], responses=CSV,
+@enrutador.get("/resumen-horario", response_model=list[ResumenHorario], responses=RESPUESTA_CSV,
             summary="Mínimo, máximo y promedio por sensor y hora")
-async def resumen_horario(db=Depends(get_db), sensor_id: str | None = Query(None, max_length=10),
+async def resumen_horario(db=Depends(obtener_db), sensor_id: str | None = Query(None, max_length=10),
                           desde: datetime | None = None, hasta: datetime | None = None, formato: Formato = "json"):
     hasta = hasta or datetime.now(timezone.utc)
     filas = await repo.resumen_horario(db, sensor_id, desde or hasta - timedelta(hours=24), hasta)
     return respuesta_csv(filas, "resumen_horario") if formato == "csv" else filas
 
 
-@router.get("/alertas-por-ubicacion", response_model=AlertasPorUbicacion, responses=CSV,
+@enrutador.get("/alertas-por-ubicacion", response_model=AlertasPorUbicacion, responses=RESPUESTA_CSV,
             summary="Alertas por edificio y severidad")
-async def alertas_por_ubicacion(db=Depends(get_db), horas: int = Query(24, ge=1, le=720), formato: Formato = "json"):
+async def alertas_por_ubicacion(db=Depends(obtener_db), horas: int = Query(24, ge=1, le=720), formato: Formato = "json"):
     datos = await repo.alertas_por_ubicacion(db, datetime.now(timezone.utc) - timedelta(hours=horas))
     return respuesta_csv(datos["por_edificio"], "alertas_por_ubicacion") if formato == "csv" else datos
 
 
-@router.get("/sensores-inactivos", response_model=list[SensorInactivo], responses=CSV,
+@enrutador.get("/sensores-inactivos", response_model=list[SensorInactivo], responses=RESPUESTA_CSV,
             summary="Sensores activos sin lecturas en los últimos N minutos")
-async def sensores_inactivos(db=Depends(get_db), minutos: int = Query(1, ge=1, le=1440), formato: Formato = "json"):
+async def sensores_inactivos(db=Depends(obtener_db), minutos: int = Query(1, ge=1, le=1440), formato: Formato = "json"):
     filas = await repo.sensores_inactivos(db, minutos)
     return respuesta_csv(filas, "sensores_inactivos") if formato == "csv" else filas
 
 
-@router.get("/tendencia/{sensor_id}", response_model=list[PuntoTendencia], responses={**CSV, **errores(404, 422)},
+@enrutador.get("/tendencia/{sensor_id}", response_model=list[PuntoTendencia], responses={**RESPUESTA_CSV, **errores(404, 422)},
             summary="Media móvil de una métrica")
-async def tendencia(sensor_id: str, metrica: str, db=Depends(get_db), horas: int = Query(1, ge=1, le=24),
+async def tendencia(sensor_id: str, metrica: str, db=Depends(obtener_db), horas: int = Query(1, ge=1, le=24),
                     ventana_min: int = Query(5, ge=1, le=60), formato: Formato = "json"):
     sensor = await repo_sensores.obtener(db, sensor_id)
     if not sensor:
@@ -54,7 +54,7 @@ async def tendencia(sensor_id: str, metrica: str, db=Depends(get_db), horas: int
     return respuesta_csv(filas, f"tendencia_{sensor_id}") if formato == "csv" else filas
 
 
-@router.get("/estado-sensores", response_model=list[EstadoSensor],
+@enrutador.get("/estado-sensores", response_model=list[EstadoSensor],
             summary="Estado operativo de cada sensor con su última lectura")
-async def estado_sensores(db=Depends(get_db)):
+async def estado_sensores(db=Depends(obtener_db)):
     return await repo.estado_sensores(db)

@@ -1,4 +1,4 @@
-const app = db.getSiblingDB(process.env.MONGO_DB);
+const bd = db.getSiblingDB(process.env.MONGO_DB);
 
 const umbrales = {
   temperatura: { temp_c: { min: 15, max: 30 }, humedad_pct: { min: 20, max: 70 } },
@@ -23,4 +23,4 @@ for (const tipo of Object.keys(prefijos)) {
     });
   }
 }
-app.sensores.insertMany(sensores);
+bd.sensores.insertMany(sensores);

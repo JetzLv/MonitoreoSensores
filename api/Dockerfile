@@ -6,4 +6,4 @@ COPY common/iot_common ./iot_common
 COPY api/app ./app
 USER appuser
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:aplicacion", "--host", "0.0.0.0", "--port", "8000"]

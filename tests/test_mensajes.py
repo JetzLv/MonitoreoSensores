@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from iot_common.mensajes import LecturaMsg
+from iot_common.mensajes import MensajeLectura
 from simulator.app.generador import lectura
 
 BASE = {"sensor_id": "TMP-001", "tipo": "temperatura", "ts": "2026-11-25T18:00:02Z",
@@ -9,7 +9,7 @@ BASE = {"sensor_id": "TMP-001", "tipo": "temperatura", "ts": "2026-11-25T18:00:0
 
 
 def test_lectura_valida():
-    assert LecturaMsg.model_validate(BASE).valores["temp_c"] == 23.4
+    assert MensajeLectura.model_validate(BASE).valores["temp_c"] == 23.4
 
 
 @pytest.mark.parametrize("cambio", [
@@ -21,7 +21,7 @@ def test_lectura_valida():
 ])
 def test_lectura_invalida(cambio):
     with pytest.raises(ValidationError):
-        LecturaMsg.model_validate({**BASE, **cambio})
+        MensajeLectura.model_validate({**BASE, **cambio})
 
 
 def test_simulador_genera_mensajes_validos_o_rechazables():
@@ -30,11 +30,11 @@ def test_simulador_genera_mensajes_validos_o_rechazables():
                            "potencia_kw": {"min": 0, "max": 2}}}
     validos = 0
     for _ in range(2000):
-        msg = lectura(sensor)
-        if msg is None:
+        mensaje = lectura(sensor)
+        if mensaje is None:
             continue
         try:
-            LecturaMsg.model_validate(msg)
+            MensajeLectura.model_validate(mensaje)
             validos += 1
         except ValidationError:
             pass

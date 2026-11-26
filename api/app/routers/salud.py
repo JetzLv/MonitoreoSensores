@@ -4,14 +4,14 @@ import aio_pika
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from ..dependencias import get_db
+from ..dependencias import obtener_db
 
-router = APIRouter(tags=["Salud"])
+enrutador = APIRouter(tags=["Salud"])
 
 
-@router.get("/health", summary="Estado de MongoDB y RabbitMQ",
+@enrutador.get("/health", summary="Estado de MongoDB y RabbitMQ",
             responses={503: {"description": "Algún servicio no responde"}})
-async def health(db=Depends(get_db)):
+async def salud(db=Depends(obtener_db)):
     estado = {"mongodb": "ok", "rabbitmq": "ok"}
     try:
         await db.command("ping")

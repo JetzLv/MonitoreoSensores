@@ -6,12 +6,12 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from ..dependencias import COOKIE, Usuario, get_pg, solo_sesion
+from ..dependencias import NOMBRE_COOKIE, Usuario, obtener_pg, solo_sesion
 from ..repositories import usuarios as repo
 from ..schemas.comun import errores
-from ..schemas.gestion import Login, UsuarioSalida
+from ..schemas.gestion import InicioSesion, UsuarioSalida
 
-router = APIRouter(prefix="/auth", tags=["Autenticación"])
+enrutador = APIRouter(prefix="/auth", tags=["Autenticación"])
 DURACION = timedelta(hours=8)
 MAX_INTENTOS, VENTANA_SEG = 10, 15 * 60
 # shortcut: contador en memoria; sirve con una sola instancia de la API. Con varias, usar un almacén compartido.
@@ -27,25 +27,25 @@ def _limitar(correo: str):
     cola.append(ahora)
 
 
-@router.post("/login", response_model=UsuarioSalida, summary="Iniciar sesión", responses=errores(401, 429))
-async def login(datos: Login, response: Response, pg=Depends(get_pg)):
+@enrutador.post("/login", response_model=UsuarioSalida, summary="Iniciar sesión", responses=errores(401, 429))
+async def iniciar_sesion(datos: InicioSesion, respuesta: Response, pg=Depends(obtener_pg)):
     _limitar(datos.correo)
-    usuario = await repo.autenticar(pg, datos.correo, datos.password)
+    usuario = await repo.autenticar(pg, datos.correo, datos.contrasena)
     if not usuario:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Correo o contraseña incorrectos")
     _intentos.pop(datos.correo.lower(), None)
-    token = jwt.encode({"sub": str(usuario["id"]), "exp": datetime.now(timezone.utc) + DURACION},
+    ficha = jwt.encode({"sub": str(usuario["id"]), "exp": datetime.now(timezone.utc) + DURACION},
                        os.environ["JWT_SECRET"], algorithm="HS256")
-    response.set_cookie(COOKIE, token, max_age=int(DURACION.total_seconds()), httponly=True, samesite="lax",
+    respuesta.set_cookie(NOMBRE_COOKIE, ficha, max_age=int(DURACION.total_seconds()), httponly=True, samesite="lax",
                         secure=os.environ.get("COOKIE_SECURE", "false") == "true", path="/")
     return usuario
 
 
-@router.post("/logout", status_code=204, summary="Cerrar sesión")
-async def logout(response: Response):
-    response.delete_cookie(COOKIE, path="/")
+@enrutador.post("/logout", status_code=204, summary="Cerrar sesión")
+async def cerrar_sesion(respuesta: Response):
+    respuesta.delete_cookie(NOMBRE_COOKIE, path="/")
 
 
-@router.get("/yo", response_model=UsuarioSalida, summary="Usuario de la sesión actual", responses=errores(401))
+@enrutador.get("/yo", response_model=UsuarioSalida, summary="Usuario de la sesión actual", responses=errores(401))
 async def yo(usuario: Usuario = Depends(solo_sesion)):
     return usuario

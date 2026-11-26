@@ -8,7 +8,7 @@ from pymongo import AsyncMongoClient
 
 from iot_common import topologia
 
-from .routers import alertas, auth, health, mensajes, reportes, sensores, tickets, usuarios
+from .routers import alertas, auth, salud, mensajes, reportes, sensores, tickets, usuarios
 
 DESCRIPCION = """
 API de la plataforma de monitoreo IoT.
@@ -18,7 +18,7 @@ API de la plataforma de monitoreo IoT.
 - Los reportes aceptan `formato=csv` para descargar el resultado.
 """
 
-TAGS = [
+ETIQUETAS = [
     {"name": "Autenticación", "description": "Inicio y cierre de sesión"},
     {"name": "Sensores", "description": "Catálogo de sensores y sus lecturas (MongoDB)"},
     {"name": "Alertas", "description": "Alertas generadas por el worker al rebasar umbrales (MongoDB)"},
@@ -31,32 +31,32 @@ TAGS = [
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    mongo = AsyncMongoClient(os.environ["MONGO_URI"], tz_aware=True)
-    app.state.db = mongo[os.environ["MONGO_DB"]]
-    app.state.pg = AsyncConnectionPool(os.environ["POSTGRES_URI"], min_size=1, max_size=10, open=False)
-    await app.state.pg.open()
+async def ciclo_de_vida(aplicacion: FastAPI):
+    cliente_mongo = AsyncMongoClient(os.environ["MONGO_URI"], tz_aware=True)
+    aplicacion.state.db = cliente_mongo[os.environ["MONGO_DB"]]
+    aplicacion.state.pg = AsyncConnectionPool(os.environ["POSTGRES_URI"], min_size=1, max_size=10, open=False)
+    await aplicacion.state.pg.open()
     conexion = await aio_pika.connect_robust(os.environ["RABBITMQ_URL"])
-    app.state.eventos = (await topologia.declarar(await conexion.channel()))["eventos"]
+    aplicacion.state.eventos = (await topologia.declarar(await conexion.channel()))["eventos"]
     yield
     await conexion.close()
-    await app.state.pg.close()
-    await mongo.close()
+    await aplicacion.state.pg.close()
+    await cliente_mongo.close()
 
 
-app = FastAPI(title="Monitoreo de Sensores IoT", version="2.0.0", description=DESCRIPCION,
-              openapi_tags=TAGS, lifespan=lifespan)
+aplicacion = FastAPI(title="Monitoreo de Sensores IoT", version="2.0.0", description=DESCRIPCION,
+              openapi_tags=ETIQUETAS, lifespan=ciclo_de_vida)
 
 
-@app.middleware("http")
-async def encabezados_seguridad(request: Request, call_next):
-    respuesta = await call_next(request)
+@aplicacion.middleware("http")
+async def encabezados_seguridad(peticion: Request, siguiente):
+    respuesta = await siguiente(peticion)
     respuesta.headers["X-Content-Type-Options"] = "nosniff"
     respuesta.headers["X-Frame-Options"] = "DENY"
     respuesta.headers["Referrer-Policy"] = "same-origin"
     return respuesta
 
 
-for router in (auth.router, sensores.router, alertas.router, reportes.router, tickets.router,
-               mensajes.router, usuarios.router, health.router):
-    app.include_router(router, prefix="/api/v1")
+for enrutador in (auth.enrutador, sensores.enrutador, alertas.enrutador, reportes.enrutador, tickets.enrutador,
+               mensajes.enrutador, usuarios.enrutador, salud.enrutador):
+    aplicacion.include_router(enrutador, prefix="/api/v1")

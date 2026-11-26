@@ -28,8 +28,8 @@ async def no_leidos(db, usuario) -> int:
 
 async def marcar_leido(db, usuario, mensaje_id: str) -> bool:
     try:
-        oid = ObjectId(mensaje_id)
+        id_objeto = ObjectId(mensaje_id)
     except InvalidId:
         return False
-    res = await db.mensajes.update_one({"_id": oid, **_filtro(usuario)}, {"$addToSet": {"leido_por": usuario.id}})
-    return res.matched_count == 1
+    resultado = await db.mensajes.update_one({"_id": id_objeto, **_filtro(usuario)}, {"$addToSet": {"leido_por": usuario.id}})
+    return resultado.matched_count == 1

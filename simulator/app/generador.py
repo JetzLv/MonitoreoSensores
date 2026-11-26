@@ -20,7 +20,7 @@ def silencioso(sensor_id: str, ahora: datetime) -> bool:
 
 def valores_normales(tipo: str, ahora: datetime) -> dict[str, float]:
     ciclo = math.sin(2 * math.pi * (ahora.hour + ahora.minute / 60) / 24)
-    valores = {m: max(0.0, random.gauss(media, sd) + ciclo * sd / 2) for m, (media, sd) in NOMINALES[tipo].items()}
+    valores = {m: max(0.0, random.gauss(media, desviacion) + ciclo * desviacion / 2) for m, (media, desviacion) in NOMINALES[tipo].items()}
     if tipo == "energia":
         valores["potencia_kw"] = valores["voltaje_v"] * valores["corriente_a"] / 1000
     return valores
@@ -37,7 +37,7 @@ def lectura(sensor: dict, ahora: datetime | None = None) -> dict | None:
         valores[metrica] = sensor["umbrales"][metrica]["max"] * random.uniform(1.05, 1.4)
     elif azar < PROB_PICO + PROB_FUERA_RANGO:
         valores[next(iter(valores))] = 9999
-    msg = {"sensor_id": sensor["_id"], "tipo": sensor["tipo"], "ts": ahora.isoformat(), "valores": valores}
+    mensaje = {"sensor_id": sensor["_id"], "tipo": sensor["tipo"], "ts": ahora.isoformat(), "valores": valores}
     if random.random() < PROB_MALFORMADO:
-        msg.pop(random.choice(["tipo", "valores", "ts"]))
-    return msg
+        mensaje.pop(random.choice(["tipo", "valores", "ts"]))
+    return mensaje

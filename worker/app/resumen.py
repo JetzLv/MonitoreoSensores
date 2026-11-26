@@ -2,12 +2,12 @@ import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 
-log = logging.getLogger("resumen")
+registro = logging.getLogger("resumen")
 
 INTERVALO_SEGUNDOS = 300
 
 
-def pipeline(desde: datetime) -> list[dict]:
+def etapas_resumen(desde: datetime) -> list[dict]:
     return [
         {"$match": {"ts": {"$gte": desde}}},
         {"$project": {
@@ -38,7 +38,7 @@ async def ciclo(db):
         # Recalcula la hora actual y la anterior; $merge lo hace idempotente.
         desde = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
         try:
-            await db.lecturas.aggregate(pipeline(desde))
+            await db.lecturas.aggregate(etapas_resumen(desde))
         except Exception:
-            log.exception("Fallo el resumen horario")
+            registro.exception("Fallo el resumen horario")
         await asyncio.sleep(INTERVALO_SEGUNDOS)

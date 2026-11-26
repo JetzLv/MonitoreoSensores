@@ -6,7 +6,7 @@ from pydantic import BaseModel
 Severidad = Literal["media", "alta", "critica"]
 
 
-class SensorRef(BaseModel):
+class SensorReferencia(BaseModel):
     id: str
     tipo: str
     ubicacion: dict
@@ -14,7 +14,7 @@ class SensorRef(BaseModel):
 
 class Alerta(BaseModel):
     id: str
-    sensor: SensorRef
+    sensor: SensorReferencia
     metrica: str
     valor: float
     umbral: float

@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 INTERVALO_SEGUNDOS = 2
 
 
-async def main():
+async def principal():
     db = AsyncMongoClient(os.environ["MONGO_URI"])[os.environ["MONGO_DB"]]
     conexion = await aio_pika.connect_robust(os.environ["RABBITMQ_URL"])
     canal = await conexion.channel()
@@ -24,11 +24,11 @@ async def main():
         sensores = await db.sensores.find({"estado": "activo"}, {"tipo": 1, "umbrales": 1}).to_list()
         enviados = 0
         for sensor in sensores:
-            msg = lectura(sensor)
-            if msg is None:
+            mensaje = lectura(sensor)
+            if mensaje is None:
                 continue
             await telemetria.publish(
-                aio_pika.Message(json.dumps(msg).encode(), content_type="application/json",
+                aio_pika.Message(json.dumps(mensaje).encode(), content_type="application/json",
                                  delivery_mode=aio_pika.DeliveryMode.PERSISTENT),
                 routing_key=f"lectura.{sensor['tipo']}.{sensor['_id']}",
             )
@@ -38,4 +38,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(principal())

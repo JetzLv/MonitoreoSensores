@@ -16,15 +16,15 @@ class Coleccion:
         return type("R", (), {"inserted_id": "64b000000000000000000001"})()
 
 
-class Exchange:
+class Intercambio:
     def __init__(self):
         self.publicados = []
 
-    async def publish(self, message, routing_key):
-        self.publicados.append((routing_key, message))
+    async def publish(self, mensaje, routing_key):
+        self.publicados.append((routing_key, mensaje))
 
 
-class Mensaje:
+class MensajeFalso:
     def __init__(self, cuerpo):
         self.body = json.dumps(cuerpo).encode()
         self.estado = None
@@ -36,7 +36,7 @@ class Mensaje:
         self.estado = "nack"
 
 
-class DB:
+class BaseFalsa:
     def __init__(self):
         self.lecturas, self.alertas = Coleccion(), Coleccion()
 
@@ -53,18 +53,18 @@ def lectura(temp):
 
 def test_flujo_de_ingesta():
     async def correr():
-        db, dlx, eventos = DB(), Exchange(), Exchange()
-        ing = Ingesta(db, dlx, eventos)
+        db, errores, eventos = BaseFalsa(), Intercambio(), Intercambio()
+        ing = Ingesta(db, errores, eventos)
         ing.sensores = {"TMP-001": SENSOR}
-        ok, pico, roto = Mensaje(lectura(22)), Mensaje(lectura(33)), Mensaje({"sensor_id": "TMP-001"})
+        ok, pico, roto = MensajeFalso(lectura(22)), MensajeFalso(lectura(33)), MensajeFalso({"sensor_id": "TMP-001"})
         for m in (ok, pico, roto):
             await ing.recibir(m)
         await ing._vaciar()
-        return db, dlx, eventos, (ok, pico, roto)
+        return db, errores, eventos, (ok, pico, roto)
 
-    db, dlx, eventos, mensajes = asyncio.run(correr())
+    db, errores, eventos, mensajes = asyncio.run(correr())
     assert [m.estado for m in mensajes] == ["ack", "ack", "ack"]
     assert len(db.lecturas.docs) == 2
     assert db.lecturas.docs[0]["meta"] == {"sensor_id": "TMP-001", "tipo": "temperatura", "edificio": "A"}
-    assert len(dlx.publicados) == 1
-    assert [rk for rk, _ in eventos.publicados] == ["alerta.alta"]
+    assert len(errores.publicados) == 1
+    assert [clave_ruta for clave_ruta, _ in eventos.publicados] == ["alerta.alta"]

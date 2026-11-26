@@ -1,6 +1,6 @@
-const app = db.getSiblingDB(process.env.MONGO_DB);
+const bd = db.getSiblingDB(process.env.MONGO_DB);
 
-app.createCollection("sensores", {
+bd.createCollection("sensores", {
   validator: {
     $jsonSchema: {
       bsonType: "object",
@@ -24,19 +24,19 @@ app.createCollection("sensores", {
     }
   }
 });
-app.sensores.createIndex({ tipo: 1, estado: 1 });
+bd.sensores.createIndex({ tipo: 1, estado: 1 });
 
-app.createCollection("lecturas", {
+bd.createCollection("lecturas", {
   timeseries: { timeField: "ts", metaField: "meta", granularity: "seconds" },
   expireAfterSeconds: 2592000
 });
-app.lecturas.createIndex({ "meta.sensor_id": 1, ts: -1 });
+bd.lecturas.createIndex({ "meta.sensor_id": 1, ts: -1 });
 
-app.createCollection("alertas");
-app.alertas.createIndex({ "sensor.id": 1, metrica: 1, ts_lectura: 1 }, { unique: true });
-app.alertas.createIndex({ estado: 1, creada_en: -1 });
+bd.createCollection("alertas");
+bd.alertas.createIndex({ "sensor.id": 1, metrica: 1, ts_lectura: 1 }, { unique: true });
+bd.alertas.createIndex({ estado: 1, creada_en: -1 });
 
-app.createCollection("notificaciones");
-app.notificaciones.createIndex({ creada_en: 1 }, { expireAfterSeconds: 604800 });
+bd.createCollection("notificaciones");
+bd.notificaciones.createIndex({ creada_en: 1 }, { expireAfterSeconds: 604800 });
 
-app.createCollection("resumen_horario");
+bd.createCollection("resumen_horario");

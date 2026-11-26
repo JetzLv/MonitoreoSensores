@@ -10,7 +10,7 @@ RANGOS_FISICOS = {
 }
 
 
-class LecturaMsg(BaseModel):
+class MensajeLectura(BaseModel):
     sensor_id: str = Field(pattern=r"^(TMP|ENE|AIR)-\d{3}$")
     tipo: Literal["temperatura", "energia", "aire"]
     ts: datetime
@@ -35,7 +35,7 @@ class LecturaMsg(BaseModel):
         return self
 
 
-class AlertaEvento(BaseModel):
+class EventoAlerta(BaseModel):
     alerta_id: str
     sensor_id: str
     metrica: str

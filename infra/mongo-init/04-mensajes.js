@@ -1,10 +1,10 @@
-const dbName = process.env.MONGO_DB;
-const app = db.getSiblingDB(dbName);
+const nombreBd = process.env.MONGO_DB;
+const bd = db.getSiblingDB(nombreBd);
 
-app.createCollection("mensajes");
-app.mensajes.createIndex({ para_rol: 1, creado_en: -1 });
-app.mensajes.createIndex({ para_usuario: 1, creado_en: -1 });
-app.mensajes.createIndex({ creado_en: 1 }, { expireAfterSeconds: 2592000 });
+bd.createCollection("mensajes");
+bd.mensajes.createIndex({ para_rol: 1, creado_en: -1 });
+bd.mensajes.createIndex({ para_usuario: 1, creado_en: -1 });
+bd.mensajes.createIndex({ creado_en: 1 }, { expireAfterSeconds: 2592000 });
 
-app.grantPrivilegesToRole("rol_api", [{ resource: { db: dbName, collection: "mensajes" }, actions: ["find", "update"] }]);
-app.grantPrivilegesToRole("rol_worker", [{ resource: { db: dbName, collection: "mensajes" }, actions: ["insert"] }]);
+bd.grantPrivilegesToRole("rol_api", [{ resource: { db: nombreBd, collection: "mensajes" }, actions: ["find", "update"] }]);
+bd.grantPrivilegesToRole("rol_worker", [{ resource: { db: nombreBd, collection: "mensajes" }, actions: ["insert"] }]);

@@ -9,9 +9,9 @@ PrioridadTicket = Literal["baja", "media", "alta", "critica"]
 CORREO = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
 
 
-class Login(BaseModel):
+class InicioSesion(BaseModel):
     correo: str = Field(pattern=CORREO, max_length=120, examples=["admin@iot.local"])
-    password: str = Field(min_length=1, max_length=128)
+    contrasena: str = Field(min_length=1, max_length=128)
 
 
 class UsuarioSalida(BaseModel):
@@ -25,14 +25,14 @@ class UsuarioSalida(BaseModel):
 class UsuarioCrear(BaseModel):
     nombre: str = Field(min_length=2, max_length=80, examples=["Rita Hernández"])
     correo: str = Field(pattern=CORREO, max_length=120, examples=["rita@iot.local"])
-    password: str = Field(min_length=10, max_length=128)
+    contrasena: str = Field(min_length=10, max_length=128)
     rol: Rol
 
 
 class UsuarioActualizar(BaseModel):
     rol: Rol | None = None
     activo: bool | None = None
-    password: str | None = Field(None, min_length=10, max_length=128)
+    contrasena: str | None = Field(None, min_length=10, max_length=128)
 
 
 class Catalogos(BaseModel):
