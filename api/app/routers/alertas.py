@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from ..dependencias import get_db, requiere_api_key
+from ..dependencias import Usuario, autorizar, cualquier_usuario, get_db
 from ..repositories import alertas as repo
-from ..schemas.alertas import Alerta, AlertaAtender, Severidad
+from ..schemas.alertas import Alerta, Severidad
 from ..schemas.comun import errores
 
-router = APIRouter(prefix="/alertas", tags=["Alertas"])
+router = APIRouter(prefix="/alertas", tags=["Alertas"], dependencies=[Depends(cualquier_usuario)])
 
 
 @router.get("", response_model=list[Alerta], summary="Listar alertas con filtros")
@@ -17,9 +17,10 @@ async def listar(db=Depends(get_db), estado: str | None = Query(None, pattern="^
 
 
 @router.patch("/{alerta_id}", response_model=Alerta, summary="Marcar alerta como atendida",
-              dependencies=[Depends(requiere_api_key)], responses=errores(401, 404, 409))
-async def atender(alerta_id: str, datos: AlertaAtender, db=Depends(get_db)):
-    resultado, alerta = await repo.atender(db, alerta_id, datos.atendida_por)
+              responses=errores(401, 403, 404, 409))
+async def atender(alerta_id: str, db=Depends(get_db),
+                  usuario: Usuario = Depends(autorizar("monitorista", "administrador"))):
+    resultado, alerta = await repo.atender(db, alerta_id, usuario.nombre)
     if resultado == "no_existe":
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Alerta {alerta_id} no existe")
     if resultado == "ya_atendida":

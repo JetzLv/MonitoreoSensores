@@ -4,6 +4,7 @@ os.environ.setdefault("MONGO_URI", "mongodb://localhost:1/?serverSelectionTimeou
 os.environ.setdefault("MONGO_DB", "prueba")
 os.environ.setdefault("RABBITMQ_URL", "amqp://localhost:1/")
 os.environ.setdefault("API_KEY", "clave-de-prueba")
+os.environ.setdefault("JWT_SECRET", "secreto-de-prueba")
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,15 +18,27 @@ CLAVE = {"X-API-Key": "clave-de-prueba"}
 
 @pytest.fixture(scope="module")
 def cliente():
-    with TestClient(app) as c:
-        yield c
+    app.state.db = app.state.pg = app.state.eventos = None
+    return TestClient(app)
 
 
-def test_swagger_documenta_14_endpoints(cliente):
+def test_swagger_documenta_todos_los_endpoints(cliente):
     esquema = cliente.get("/openapi.json").json()
     operaciones = sum(len(metodos) for metodos in esquema["paths"].values())
-    assert operaciones == 14
+    assert operaciones == 30
     assert cliente.get("/docs").status_code == 200
+
+
+@pytest.mark.parametrize("ruta", ["/api/v1/sensores", "/api/v1/alertas", "/api/v1/tickets", "/api/v1/mensajes",
+                                  "/api/v1/reportes/estado-sensores", "/api/v1/usuarios"])
+def test_lecturas_requieren_sesion(cliente, ruta):
+    assert cliente.get(ruta).status_code == 401
+
+
+def test_cookie_falsa_es_401(cliente):
+    cliente.cookies.set("sesion", "token-inventado")
+    assert cliente.get("/api/v1/auth/yo").status_code == 401
+    cliente.cookies.clear()
 
 
 def test_escritura_sin_api_key_es_401(cliente):

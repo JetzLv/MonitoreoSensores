@@ -2,14 +2,15 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
-from ..dependencias import get_db, requiere_api_key
+from ..dependencias import autorizar, cualquier_usuario, get_db
 from ..repositories import lecturas as repo_lecturas
 from ..repositories import sensores as repo
 from ..schemas.comun import errores
 from ..schemas.lecturas import Lectura
 from ..schemas.sensores import Estado, Sensor, SensorActualizar, SensorCrear, Tipo, validar_umbrales
 
-router = APIRouter(prefix="/sensores", tags=["Sensores"])
+router = APIRouter(prefix="/sensores", tags=["Sensores"], dependencies=[Depends(cualquier_usuario)])
+solo_admin = autorizar("administrador")
 
 
 async def _existente(db, sensor_id: str) -> dict:
@@ -20,7 +21,7 @@ async def _existente(db, sensor_id: str) -> dict:
 
 
 @router.post("", status_code=201, response_model=Sensor, summary="Registrar sensor",
-             dependencies=[Depends(requiere_api_key)], responses=errores(401, 409))
+             dependencies=[Depends(solo_admin)], responses=errores(401, 403, 409))
 async def crear(datos: SensorCrear, db=Depends(get_db)):
     sensor = await repo.crear(db, datos.model_dump())
     if not sensor:
@@ -36,13 +37,13 @@ async def listar(db=Depends(get_db), tipo: Tipo | None = None, estado: Estado | 
     return await repo.listar(db, filtros, saltar, limite)
 
 
-@router.get("/{sensor_id}", response_model=Sensor, summary="Consultar sensor", responses=errores(404))
+@router.get("/{sensor_id}", response_model=Sensor, summary="Consultar sensor", responses=errores(401, 404))
 async def obtener(sensor_id: str, db=Depends(get_db)):
     return await _existente(db, sensor_id)
 
 
 @router.patch("/{sensor_id}", response_model=Sensor, summary="Actualizar umbrales o estado",
-              dependencies=[Depends(requiere_api_key)], responses=errores(401, 404))
+              dependencies=[Depends(solo_admin)], responses=errores(401, 403, 404))
 async def actualizar(sensor_id: str, datos: SensorActualizar, db=Depends(get_db)):
     sensor = await _existente(db, sensor_id)
     cambios = datos.model_dump(exclude_none=True)
@@ -57,7 +58,7 @@ async def actualizar(sensor_id: str, datos: SensorActualizar, db=Depends(get_db)
 
 
 @router.delete("/{sensor_id}", status_code=204, summary="Baja lógica; conserva su historial",
-               dependencies=[Depends(requiere_api_key)], responses=errores(401, 404))
+               dependencies=[Depends(solo_admin)], responses=errores(401, 403, 404))
 async def dar_de_baja(sensor_id: str, db=Depends(get_db)):
     await _existente(db, sensor_id)
     await repo.actualizar(db, sensor_id, {"estado": "baja"})

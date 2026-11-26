@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -33,3 +34,13 @@ class PuntoTendencia(BaseModel):
     ts: datetime
     valor: float
     media_movil: float
+
+
+class EstadoSensor(BaseModel):
+    sensor_id: str
+    tipo: str
+    ubicacion: dict
+    estado: Literal["normal", "alerta", "inactivo", "fuera_de_servicio"]
+    ultima_lectura: datetime | None
+    valores: dict[str, float] | None
+    alertas_abiertas: int

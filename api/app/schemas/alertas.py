@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 Severidad = Literal["media", "alta", "critica"]
 
@@ -24,7 +24,3 @@ class Alerta(BaseModel):
     creada_en: datetime
     atendida_en: datetime | None = None
     atendida_por: str | None = None
-
-
-class AlertaAtender(BaseModel):
-    atendida_por: str = Field(min_length=1, max_length=60, examples=["Jetz"])

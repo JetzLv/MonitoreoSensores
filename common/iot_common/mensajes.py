@@ -42,3 +42,19 @@ class AlertaEvento(BaseModel):
     valor: float
     umbral: float
     severidad: Literal["media", "alta", "critica"]
+
+
+class Remitente(BaseModel):
+    tipo: Literal["sistema", "usuario"]
+    usuario_id: int | None = None
+    nombre: str
+
+
+class EventoMensaje(BaseModel):
+    tipo: Literal["sensor_inactivo", "sensor_recuperado", "alerta_critica", "ticket_creado", "ticket_actualizado", "directo"]
+    asunto: str = Field(max_length=120)
+    cuerpo: str = Field(max_length=2000)
+    para_rol: Literal["administrador", "monitorista", "soporte"] | None = None
+    para_usuario: int | None = None
+    de: Remitente
+    referencia: dict[str, str] = {}

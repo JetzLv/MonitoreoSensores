@@ -7,7 +7,8 @@ from aio_pika.abc import AbstractExchange, AbstractIncomingMessage
 from pydantic import ValidationError
 from pymongo.errors import DuplicateKeyError
 
-from iot_common.mensajes import AlertaEvento, LecturaMsg
+from iot_common import publicar
+from iot_common.mensajes import AlertaEvento, EventoMensaje, LecturaMsg, Remitente
 
 from .reglas import evaluar
 
@@ -105,3 +106,10 @@ class Ingesta:
                                  delivery_mode=aio_pika.DeliveryMode.PERSISTENT),
                 routing_key=f"alerta.{a['severidad']}",
             )
+            if a["severidad"] == "critica":
+                await publicar.mensaje(self.eventos, EventoMensaje(
+                    tipo="alerta_critica", para_rol="monitorista",
+                    de=Remitente(tipo="sistema", nombre="Motor de reglas"),
+                    referencia={"sensor_id": l.sensor_id, "alerta_id": str(res.inserted_id)},
+                    asunto=f"Alerta crítica en {l.sensor_id}",
+                    cuerpo=f"{a['metrica']} = {a['valor']} rebasa el umbral de {a['umbral']}."))

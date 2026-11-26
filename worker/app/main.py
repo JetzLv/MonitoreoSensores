@@ -7,7 +7,7 @@ from pymongo import AsyncMongoClient
 
 from iot_common import topologia
 
-from . import resumen
+from . import inactivos, mensajes, resumen
 from .ingesta import LOTE_MAX, Ingesta
 from .notificaciones import crear_consumidor
 
@@ -28,8 +28,9 @@ async def main():
 
     await t["q_ingesta"].consume(ingesta.recibir)
     await t["q_notificaciones"].consume(crear_consumidor(db))
+    await t["q_mensajes"].consume(mensajes.crear_consumidor(db))
     logging.info("Worker listo con %d sensores", len(ingesta.sensores))
-    await asyncio.gather(tarea_sensores, ingesta.ciclo_lotes(), resumen.ciclo(db))
+    await asyncio.gather(tarea_sensores, ingesta.ciclo_lotes(), resumen.ciclo(db), inactivos.ciclo(db, t["eventos"]))
 
 
 if __name__ == "__main__":

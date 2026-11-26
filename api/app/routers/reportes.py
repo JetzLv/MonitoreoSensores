@@ -6,13 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from iot_common.mensajes import RANGOS_FISICOS
 
 from ..csv_util import respuesta_csv
-from ..dependencias import get_db
+from ..dependencias import cualquier_usuario, get_db
 from ..repositories import reportes as repo
 from ..repositories import sensores as repo_sensores
 from ..schemas.comun import errores
-from ..schemas.reportes import AlertasPorUbicacion, PuntoTendencia, ResumenHorario, SensorInactivo
+from ..schemas.reportes import AlertasPorUbicacion, EstadoSensor, PuntoTendencia, ResumenHorario, SensorInactivo
 
-router = APIRouter(prefix="/reportes", tags=["Reportes"])
+router = APIRouter(prefix="/reportes", tags=["Reportes"], dependencies=[Depends(cualquier_usuario)])
 Formato = Literal["json", "csv"]
 CSV = {200: {"content": {"text/csv": {}}, "description": "JSON o CSV según el parámetro formato"}}
 
@@ -52,3 +52,9 @@ async def tendencia(sensor_id: str, metrica: str, db=Depends(get_db), horas: int
                             f"Métricas válidas para {sensor['tipo']}: {sorted(RANGOS_FISICOS[sensor['tipo']])}")
     filas = await repo.tendencia(db, sensor_id, metrica, horas, ventana_min)
     return respuesta_csv(filas, f"tendencia_{sensor_id}") if formato == "csv" else filas
+
+
+@router.get("/estado-sensores", response_model=list[EstadoSensor],
+            summary="Estado operativo de cada sensor con su última lectura")
+async def estado_sensores(db=Depends(get_db)):
+    return await repo.estado_sensores(db)

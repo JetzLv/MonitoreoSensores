@@ -50,3 +50,30 @@ async def tendencia(db, sensor_id: str, metrica: str, horas: int, ventana_min: i
         {"$project": {"_id": 0, "ts": 1, "valor": f"$valores.{metrica}", "media_movil": {"$round": ["$media_movil", 2]}}},
     ])
     return await cursor.to_list()
+
+
+async def estado_sensores(db, minutos_inactivo: int = 2) -> list[dict]:
+    ahora = datetime.now(timezone.utc)
+    cursor = await db.lecturas.aggregate([
+        {"$match": {"ts": {"$gte": ahora - timedelta(hours=1)}}},
+        {"$group": {"_id": "$meta.sensor_id", "ultima": {"$top": {"sortBy": {"ts": -1}, "output": {"ts": "$ts", "valores": "$valores"}}}}},
+    ])
+    ultimas = {d["_id"]: d["ultima"] async for d in cursor}
+    cursor = await db.alertas.aggregate([{"$match": {"estado": "abierta"}}, {"$group": {"_id": "$sensor.id", "n": {"$sum": 1}}}])
+    abiertas = {d["_id"]: d["n"] async for d in cursor}
+    limite = ahora - timedelta(minutes=minutos_inactivo)
+    resultado = []
+    async for s in db.sensores.find({"estado": {"$ne": "baja"}}).sort("_id", 1):
+        ultima = ultimas.get(s["_id"])
+        if s["estado"] != "activo":
+            estado = "fuera_de_servicio"
+        elif not ultima or ultima["ts"] < limite:
+            estado = "inactivo"
+        elif abiertas.get(s["_id"]):
+            estado = "alerta"
+        else:
+            estado = "normal"
+        resultado.append({"sensor_id": s["_id"], "tipo": s["tipo"], "ubicacion": s["ubicacion"], "estado": estado,
+                          "ultima_lectura": ultima["ts"] if ultima else None, "valores": ultima["valores"] if ultima else None,
+                          "alertas_abiertas": abiertas.get(s["_id"], 0)})
+    return resultado
