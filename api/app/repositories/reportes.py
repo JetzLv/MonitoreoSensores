@@ -39,6 +39,9 @@ async def sensores_inactivos(db, minutos: int) -> list[dict]:
             async for s in activos if ultimas.get(s["_id"]) is None or ultimas[s["_id"]] < limite]
 
 
+PUNTOS_TENDENCIA = 360
+
+
 async def tendencia(db, sensor_id: str, metrica: str, horas: int, ventana_min: int) -> list[dict]:
     desde = datetime.now(timezone.utc) - timedelta(hours=horas)
     cursor = await db.lecturas.aggregate([
@@ -47,7 +50,17 @@ async def tendencia(db, sensor_id: str, metrica: str, horas: int, ventana_min: i
             "sortBy": {"ts": 1},
             "output": {"media_movil": {"$avg": f"$valores.{metrica}", "window": {"range": [-ventana_min, 0], "unit": "minute"}}},
         }},
-        {"$project": {"_id": 0, "ts": 1, "valor": f"$valores.{metrica}", "media_movil": {"$round": ["$media_movil", 2]}}},
+        # Agrupa en ~360 intervalos para que 24 h no envíen 43 mil puntos; mínimo y máximo conservan los picos.
+        {"$group": {
+            "_id": {"$dateTrunc": {"date": "$ts", "unit": "second", "binSize": max(1, horas * 3600 // PUNTOS_TENDENCIA)}},
+            "valor": {"$avg": f"$valores.{metrica}"},
+            "minimo": {"$min": f"$valores.{metrica}"},
+            "maximo": {"$max": f"$valores.{metrica}"},
+            "media_movil": {"$avg": "$media_movil"},
+        }},
+        {"$sort": {"_id": 1}},
+        {"$project": {"_id": 0, "ts": "$_id", "valor": {"$round": ["$valor", 2]}, "minimo": {"$round": ["$minimo", 2]},
+                      "maximo": {"$round": ["$maximo", 2]}, "media_movil": {"$round": ["$media_movil", 2]}}},
     ])
     return await cursor.to_list()
 

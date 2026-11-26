@@ -15,10 +15,11 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Los servicios `mongo`, `rabbitmq` y `postgres` deben aparecer como `healthy`; `api`, `worker` y `simulator` como `running`.
+Los servicios `mongo`, `rabbitmq` y `postgres` deben aparecer como `healthy`; `web`, `api`, `worker` y `simulator` como `running`.
 
 | Servicio | URL |
 |---|---|
+| Interfaz web | http://localhost:8080 |
 | Swagger (API) | http://localhost:8000/docs |
 | Panel de RabbitMQ | http://localhost:15672 |
 | MongoDB | mongodb://localhost:27018 |
@@ -35,6 +36,20 @@ docker compose logs tunel
 ```
 
 En los logs aparece una dirección `https://<aleatorio>.trycloudflare.com`. Cambia en cada reinicio del túnel.
+
+El túnel expone solo la interfaz web; Swagger, MongoDB, RabbitMQ y PostgreSQL siguen accesibles únicamente desde este equipo. Con el túnel activo usa `COOKIE_SECURE=true` en `.env`.
+
+## Desarrollo de la interfaz
+
+Con la API levantada en Docker:
+
+```bash
+cd web
+npm ci --ignore-scripts
+npm run dev
+```
+
+Vite sirve la interfaz en http://localhost:5173 y redirige `/api` a la API.
 
 ## Pruebas
 

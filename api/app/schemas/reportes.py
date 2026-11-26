@@ -33,6 +33,8 @@ class SensorInactivo(BaseModel):
 class PuntoTendencia(BaseModel):
     ts: datetime
     valor: float
+    minimo: float
+    maximo: float
     media_movil: float
 
 

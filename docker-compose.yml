@@ -108,13 +108,21 @@ services:
       worker:
         condition: service_started
 
+  web:
+    build: ./web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - api
+
   tunel:
     image: cloudflare/cloudflared:latest
     profiles: ["tunel"]
     restart: unless-stopped
-    command: tunnel --no-autoupdate --url http://api:8000
+    command: tunnel --no-autoupdate --url http://web:8080
     depends_on:
-      - api
+      - web
 
 volumes:
   postgres_data:
