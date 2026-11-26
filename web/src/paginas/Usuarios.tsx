@@ -41,7 +41,7 @@ export function Usuarios() {
     <>
       <EncabezadoPagina titulo="Usuarios" subtitulo="Solo visible para administradores" />
       <main className="principal fila" style={{ flexDirection: 'row' }}>
-        <section className="tarjeta tabla-caja ancho" aria-label="Lista de usuarios">
+        <section className="tarjeta tabla-caja ancho desplazable" aria-label="Lista de usuarios">
           <AvisoError error={usuarios.error ?? actualizar.error} />
           {usuarios.isPending ? <div style={{ padding: 20 }}><Esqueleto filas={4} /></div> : (
             <table style={{ minWidth: 640 }}>
@@ -78,7 +78,7 @@ export function Usuarios() {
             </table>
           )}
         </section>
-        <aside className="tarjeta tarjeta-relleno angosto" aria-labelledby="titulo-nuevo-usuario">
+        <aside className="tarjeta tarjeta-relleno angosto desplazable" aria-labelledby="titulo-nuevo-usuario">
           <form ref={formulario} className="formulario" onSubmit={enviar}>
             <h2 id="titulo-nuevo-usuario">Nuevo usuario</h2>
             <div className="campo"><label htmlFor="u-nombre">Nombre</label><input id="u-nombre" name="nombre" required minLength={2} maxLength={80} autoComplete="off" /></div>

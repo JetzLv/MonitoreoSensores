@@ -64,7 +64,7 @@ export function Alertas() {
           </div>
         </div>
         <AvisoError error={alertas.error ?? atender.error} />
-        <div className="tarjeta tabla-caja">
+        <div className="tarjeta tabla-caja desplazable bajo">
           {alertas.isPending ? <div style={{ padding: 20 }}><Esqueleto filas={6} /></div>
             : alertas.data?.length === 0 ? <EstadoVacio titulo="Sin alertas con estos filtros" texto="Prueba con otro estado o severidad." />
             : (

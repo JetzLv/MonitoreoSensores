@@ -64,7 +64,7 @@ export function Mensajes() {
           {mensajes.isPending ? <div style={{ padding: 16 }}><Esqueleto filas={5} alto={64} /></div>
             : lista.length === 0 ? <EstadoVacio titulo={soloNoLeidos ? 'Todo leído' : 'Bandeja vacía'} />
             : (
-              <ul className="lista-mensajes">
+              <ul className="lista-mensajes desplazable bajo">
                 {lista.map((m) => (
                   <li key={m.id}>
                     <button type="button" className="mensaje-fila" aria-current={m.id === seleccionado && !redactando} onClick={() => abrir(m)}>
@@ -85,7 +85,7 @@ export function Mensajes() {
               </ul>
             )}
         </section>
-        <section className="tarjeta tarjeta-relleno ancho" style={{ flexBasis: 460, padding: 24 }} aria-label="Lectura">
+        <section className="tarjeta tarjeta-relleno ancho desplazable" style={{ flexBasis: 460, padding: 24 }} aria-label="Lectura">
           {enviado && <AvisoExito>Mensaje enviado. Llegará a la bandeja del rol destino en unos segundos.</AvisoExito>}
           {redactando ? <Redactar alEnviar={() => { cambiarRedactando(false); cambiarEnviado(true); }} alCancelar={() => cambiarRedactando(false)} />
             : actual ? <LecturaMensaje mensaje={actual} />

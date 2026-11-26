@@ -53,6 +53,7 @@ export function Tickets() {
                     <h2 className="etiqueta-campo" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                       {ESTADO_TICKET[columna]}<span className="mono">{lista.length}</span>
                     </h2>
+                    <div className="desplazable bajo" style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 2 }}>
                     {lista.map((t) => (
                       <button key={t.folio} type="button" className="ficha-ticket" aria-pressed={!modoNuevo && t.folio === seleccionado} onClick={() => elegir(t.folio)}>
                         <span style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'center' }}>
@@ -64,13 +65,14 @@ export function Tickets() {
                         {t.vencido && <Etiqueta tono="tag-critico">SLA vencido</Etiqueta>}
                       </button>
                     ))}
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
         </section>
-        <aside className="tarjeta tarjeta-relleno angosto" aria-label={modoNuevo ? 'Nuevo ticket' : 'Detalle del ticket'}>
+        <aside className="tarjeta tarjeta-relleno angosto desplazable" aria-label={modoNuevo ? 'Nuevo ticket' : 'Detalle del ticket'}>
           {modoNuevo
             ? <FormularioTicket parametros={parametros} alCrear={elegir} alCancelar={() => cambiarParametros({})} />
             : seleccionado ? <DetalleTicket folio={seleccionado} /> : <EstadoVacio titulo="Sin tickets" texto="Los tickets se levantan desde una alerta o un sensor." />}

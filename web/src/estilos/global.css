@@ -99,12 +99,22 @@ p { margin: 0; }
 .nav-usuario .nav-salir { margin-top: 8px; }
 .nav-usuario { margin-top: auto; padding: 16px 12px 0; border-top: 1px solid #1E293B; display: flex; flex-direction: column; gap: 2px; }
 .contenido { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; }
-.encabezado { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 20px 32px; background: var(--superficie); border-bottom: 1px solid var(--borde); }
+.encabezado { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 20px 32px; background: var(--superficie); border-bottom: 1px solid var(--borde); }
 .encabezado-acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .principal { padding: 24px 32px 40px; display: flex; flex-direction: column; gap: 24px; }
 .fila { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
 .fila > .ancho { flex: 999 1 560px; min-width: 0; }
 .fila > .angosto { flex: 1 1 320px; min-width: 0; }
+/* En escritorio el menú queda fijo y solo se desplaza el contenido; las listas largas tienen su propio desplazamiento. */
+@media (min-width: 641px) {
+  .app { height: 100dvh; overflow: hidden; }
+  .nav { overflow-y: auto; }
+  .contenido { height: 100%; overflow-y: auto; }
+  .desplazable { max-height: calc(100dvh - 200px); overflow-y: auto; }
+  .desplazable.bajo { max-height: calc(100dvh - 330px); }
+  .desplazable th { position: sticky; top: 0; z-index: 1; }
+}
+
 @media (max-width: 640px) {
   .encabezado, .principal { padding-left: 16px; padding-right: 16px; }
   .nav { flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 12px; }
