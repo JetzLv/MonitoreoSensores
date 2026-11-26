@@ -57,8 +57,9 @@ services:
         condition: service_healthy
 
   worker:
-    build: ./worker
-    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
     restart: unless-stopped
     environment:
       MONGO_URI: mongodb://${MONGO_WORKER_USER}:${MONGO_WORKER_PASSWORD}@mongo:27017/${MONGO_DB}?authSource=${MONGO_DB}
@@ -71,8 +72,9 @@ services:
         condition: service_healthy
 
   simulator:
-    build: ./simulator
-    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: simulator/Dockerfile
     restart: unless-stopped
     environment:
       MONGO_URI: mongodb://${MONGO_SIM_USER}:${MONGO_SIM_PASSWORD}@mongo:27017/${MONGO_DB}?authSource=${MONGO_DB}

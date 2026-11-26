@@ -11,16 +11,23 @@ Plataforma de monitoreo IoT con MongoDB (series de tiempo), RabbitMQ y una API R
 
 ```bash
 cp .env.example .env
-docker compose up -d
+docker compose up -d --build
 docker compose ps
 ```
 
-Los servicios `mongo` y `rabbitmq` deben aparecer como `healthy`.
+Los servicios `mongo` y `rabbitmq` deben aparecer como `healthy`; `worker` y `simulator` como `running`.
 
 | Servicio | URL |
 |---|---|
 | Panel de RabbitMQ | http://localhost:15672 |
 | MongoDB | mongodb://localhost:27017 |
+
+## Pruebas
+
+```bash
+pip install -r worker/requirements.txt pytest
+pytest
+```
 
 ## Notas
 
