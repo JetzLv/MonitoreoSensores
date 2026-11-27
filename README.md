@@ -6,6 +6,7 @@ Plataforma de monitoreo IoT con MongoDB (series de tiempo), RabbitMQ y una API R
 
 - Docker Desktop con Docker Compose
 - Git
+- MongoDB
 
 ## Arranque
 
