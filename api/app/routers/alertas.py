@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from ..dependencias import Usuario, autorizar, cualquier_usuario, obtener_db
 from ..repositories import alertas as repo
-from ..schemas.alertas import Alerta, Severidad
+from ..schemas.alertas import Alerta, AtencionMasiva, ResultadoAtencion, Severidad
 from ..schemas.comun import errores
 
 enrutador = APIRouter(prefix="/alertas", tags=["Alertas"], dependencies=[Depends(cualquier_usuario)])
@@ -14,6 +14,14 @@ async def listar(db=Depends(obtener_db), estado: str | None = Query(None, patter
                  limite: int = Query(50, ge=1, le=500)):
     filtros = {k: v for k, v in {"estado": estado, "severidad": severidad, "sensor.id": sensor_id}.items() if v}
     return await repo.listar(db, filtros, limite)
+
+
+@enrutador.patch("", response_model=ResultadoAtencion, summary="Atender varias alertas",
+              description="Marca como atendidas las alertas abiertas de la lista; las ya atendidas se ignoran.",
+              responses=errores(401, 403, 422))
+async def atender_varias(datos: AtencionMasiva, db=Depends(obtener_db),
+                         usuario: Usuario = Depends(autorizar("monitorista", "administrador"))):
+    return {"atendidas": await repo.atender_varias(db, datos.ids, usuario.nombre)}
 
 
 @enrutador.patch("/{alerta_id}", response_model=Alerta, summary="Marcar alerta como atendida",

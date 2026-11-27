@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Send } from 'lucide-react';
+import { CheckCheck, Send } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { consulta, peticion } from '../api/cliente';
 import type { Mensaje, Rol } from '../api/tipos';
 import { AvisoError, AvisoExito, EncabezadoPagina, Esqueleto, EstadoVacio, Etiqueta } from '../componentes/Comunes';
+import { useNoLeidos } from '../componentes/Disposicion';
 import { fechaHora, hora, NOMBRE_ROL } from '../formato';
 import { useSesion } from '../sesion/ContextoSesion';
 import { useIntervalo } from '../sesion/ContextoVivo';
@@ -35,6 +36,12 @@ export function Mensajes() {
     onSuccess: () => clienteConsultas.invalidateQueries({ queryKey: ['mensajes'] }),
   });
 
+  const marcarTodos = useMutation({
+    mutationFn: () => peticion<{ total: number }>('/mensajes/leidos', { metodo: 'PATCH' }),
+    onSuccess: () => clienteConsultas.invalidateQueries({ queryKey: ['mensajes'] }),
+  });
+  const sinLeer = useNoLeidos().data?.total ?? 0;
+
   const lista = mensajes.data ?? [];
   const actual = lista.find((m) => m.id === seleccionado);
 
@@ -59,8 +66,10 @@ export function Mensajes() {
           <div className="pastillas" role="group" aria-label="Filtro" style={{ padding: '14px 16px', borderBottom: '1px solid var(--borde)' }}>
             <button type="button" className="pastilla" aria-pressed={!soloNoLeidos} onClick={() => cambiarSoloNoLeidos(false)}>Todos</button>
             <button type="button" className="pastilla" aria-pressed={soloNoLeidos} onClick={() => cambiarSoloNoLeidos(true)}>Sin leer</button>
+            <button type="button" className="enlace-boton" style={{ marginLeft: 'auto' }} disabled={sinLeer === 0 || marcarTodos.isPending}
+              onClick={() => marcarTodos.mutate()}><CheckCheck size={14} aria-hidden style={{ verticalAlign: -2, marginRight: 4 }} />Marcar todo como leído</button>
           </div>
-          <AvisoError error={mensajes.error} />
+          <AvisoError error={mensajes.error ?? marcarTodos.error} />
           {mensajes.isPending ? <div style={{ padding: 16 }}><Esqueleto filas={5} alto={64} /></div>
             : lista.length === 0 ? <EstadoVacio titulo={soloNoLeidos ? 'Todo leído' : 'Bandeja vacía'} />
             : (

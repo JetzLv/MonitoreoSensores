@@ -34,7 +34,7 @@ async def iniciar_sesion(datos: InicioSesion, respuesta: Response, pg=Depends(ob
     if not usuario:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Correo o contraseña incorrectos")
     _intentos.pop(datos.correo.lower(), None)
-    ficha = jwt.encode({"sub": str(usuario["id"]), "exp": datetime.now(timezone.utc) + DURACION},
+    ficha = jwt.encode({"sub": str(usuario["id"]), "hu": usuario["huella"], "exp": datetime.now(timezone.utc) + DURACION},
                        os.environ["JWT_SECRET"], algorithm="HS256")
     respuesta.set_cookie(NOMBRE_COOKIE, ficha, max_age=int(DURACION.total_seconds()), httponly=True, samesite="lax",
                         secure=os.environ.get("COOKIE_SECURE", "false") == "true", path="/")

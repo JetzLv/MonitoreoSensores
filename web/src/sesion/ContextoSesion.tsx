@@ -8,6 +8,7 @@ interface ValorSesion {
   cargando: boolean;
   iniciarSesion: (correo: string, contrasena: string) => Promise<void>;
   cerrarSesion: () => Promise<void>;
+  actualizarUsuario: (usuario: Usuario) => void;
   tieneRol: (...roles: Rol[]) => boolean;
 }
 
@@ -40,6 +41,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       clienteConsultas.clear();
       cambiarUsuario(null);
     },
+    actualizarUsuario: cambiarUsuario,
     tieneRol: (...roles) => !!usuario && roles.includes(usuario.rol),
   };
 

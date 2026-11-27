@@ -23,17 +23,21 @@ async def crear(datos: UsuarioCrear, pg=Depends(obtener_pg), _=Depends(solo_admi
     return usuario
 
 
-@enrutador.patch("/usuarios/{id_usuario}", response_model=UsuarioSalida, summary="Cambiar rol, estado o contraseña",
-              responses=errores(401, 403, 404, 422))
+@enrutador.patch("/usuarios/{id_usuario}", response_model=UsuarioSalida, summary="Editar nombre, correo, rol, estado o contraseña",
+              description="Cambiar correo o contraseña cierra las sesiones abiertas de ese usuario.",
+              responses=errores(401, 403, 404, 409, 422))
 async def actualizar(id_usuario: int, datos: UsuarioActualizar, pg=Depends(obtener_pg), yo: Usuario = Depends(solo_admin)):
     cambios = datos.model_dump(exclude_none=True)
     if not cambios:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Envía rol, activo o contrasena")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Envía al menos un campo para actualizar")
     if id_usuario == yo.id and (cambios.get("activo") is False or cambios.get("rol", "administrador") != "administrador"):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "No puedes desactivarte ni quitarte el rol de administrador")
     if not await repo.obtener(pg, id_usuario):
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Usuario {id_usuario} no existe")
-    return await repo.actualizar(pg, id_usuario, cambios)
+    usuario = await repo.actualizar(pg, id_usuario, cambios)
+    if not usuario:
+        raise HTTPException(status.HTTP_409_CONFLICT, f"Ya existe un usuario con el correo {cambios.get('correo')}")
+    return usuario
 
 
 @enrutador.get("/catalogos", response_model=Catalogos, summary="Roles, prioridades y estados de ticket",

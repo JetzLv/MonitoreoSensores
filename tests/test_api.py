@@ -25,7 +25,7 @@ def cliente():
 def test_swagger_documenta_todos_los_endpoints(cliente):
     esquema = cliente.get("/openapi.json").json()
     operaciones = sum(len(metodos) for metodos in esquema["paths"].values())
-    assert operaciones == 30
+    assert operaciones == 33
     assert cliente.get("/docs").status_code == 200
 
 
@@ -33,6 +33,24 @@ def test_swagger_documenta_todos_los_endpoints(cliente):
                                   "/api/v1/reportes/estado-sensores", "/api/v1/usuarios"])
 def test_lecturas_requieren_sesion(cliente, ruta):
     assert cliente.get(ruta).status_code == 401
+
+
+@pytest.mark.parametrize("metodo,ruta,cuerpo", [
+    ("patch", "/api/v1/alertas", {"ids": ["665f1c2e9b1e8a0012345678"]}),
+    ("patch", "/api/v1/mensajes/leidos", None),
+    ("post", "/api/v1/tickets/cierre-masivo", {"folios": ["TK-00001"], "comentario": "Revisado"}),
+    ("patch", "/api/v1/usuarios/2", {"nombre": "Rita H."}),
+])
+def test_acciones_masivas_requieren_sesion(cliente, metodo, ruta, cuerpo):
+    assert getattr(cliente, metodo)(ruta, json=cuerpo).status_code == 401
+
+
+def test_huella_cambia_con_correo_o_contrasena():
+    from api.app.dependencias import huella_sesion
+    base = huella_sesion("rita@iot.local", "hash-1")
+    assert huella_sesion("RITA@iot.local", "hash-1") == base
+    assert huella_sesion("rita2@iot.local", "hash-1") != base
+    assert huella_sesion("rita@iot.local", "hash-2") != base
 
 
 def test_cookie_falsa_es_401(cliente):

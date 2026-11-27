@@ -1,6 +1,8 @@
 import bcrypt
 from psycopg.errors import UniqueViolation
 
+from ..dependencias import huella_sesion
+
 CONSULTA_USUARIO = """SELECT u.id_usuario AS id, u.nombre, u.correo, r.nombre AS rol, u.activo
 FROM usuario u JOIN rol r USING (id_rol)"""
 HASH_FALSO = bcrypt.hashpw(b"x", bcrypt.gensalt(12))
@@ -21,7 +23,9 @@ async def autenticar(pg, correo: str, contrasena: str) -> dict | None:
             "WHERE lower(u.correo) = lower(%s) AND u.activo", (correo,))).fetchone()
     # Se compara aunque el usuario no exista para no revelar qué correos son válidos por el tiempo de respuesta.
     valido = bcrypt.checkpw(contrasena.encode(), fila[4].encode() if fila else HASH_FALSO)
-    return {"id": fila[0], "nombre": fila[1], "correo": fila[2], "rol": fila[3]} if fila and valido else None
+    if not (fila and valido):
+        return None
+    return {"id": fila[0], "nombre": fila[1], "correo": fila[2], "rol": fila[3], "huella": huella_sesion(fila[2], fila[4])}
 
 
 async def listar(pg) -> list[dict]:
@@ -52,14 +56,21 @@ async def obtener(pg, id_usuario: int) -> dict | None:
 
 async def actualizar(pg, id_usuario: int, cambios: dict) -> dict | None:
     asignaciones, parametros = [], []
+    if "nombre" in cambios:
+        asignaciones.append("nombre = %s"); parametros.append(cambios["nombre"])
+    if "correo" in cambios:
+        asignaciones.append("correo = lower(%s)"); parametros.append(cambios["correo"])
     if "rol" in cambios:
         asignaciones.append("id_rol = (SELECT id_rol FROM rol WHERE nombre = %s)"); parametros.append(cambios["rol"])
     if "activo" in cambios:
         asignaciones.append("activo = %s"); parametros.append(cambios["activo"])
     if "contrasena" in cambios:
         asignaciones.append("hash_password = %s"); parametros.append(cifrar_contrasena(cambios["contrasena"]))
-    async with pg.connection() as conexion:
-        await conexion.execute(f"UPDATE usuario SET {', '.join(asignaciones)} WHERE id_usuario = %s", (*parametros, id_usuario))
+    try:
+        async with pg.connection() as conexion:
+            await conexion.execute(f"UPDATE usuario SET {', '.join(asignaciones)} WHERE id_usuario = %s", (*parametros, id_usuario))
+    except UniqueViolation:
+        return None
     return await obtener(pg, id_usuario)
 
 

@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { consulta, peticion } from '../api/cliente';
 import type { EstadoTicket, Prioridad, Ticket } from '../api/tipos';
-import { AvisoError, EncabezadoPagina, Esqueleto, EstadoVacio, Etiqueta } from '../componentes/Comunes';
+import { AvisoError, AvisoExito, EncabezadoPagina, Esqueleto, EstadoVacio, Etiqueta } from '../componentes/Comunes';
 import { ESTADO_TICKET, fechaHora, PRIORIDAD } from '../formato';
 import { useSesion } from '../sesion/ContextoSesion';
 import { useIntervalo } from '../sesion/ContextoVivo';
@@ -18,6 +18,8 @@ export function Tickets() {
   const [soloMios, cambiarSoloMios] = useState(false);
   const folio = parametros.get('folio');
   const modoNuevo = parametros.get('nuevo') === '1';
+  const modoCierre = parametros.get('cierre') === '1';
+  const puedeCerrar = tieneRol('monitorista', 'administrador');
 
   const tickets = useQuery({
     queryKey: ['tickets', soloMios],
@@ -53,9 +55,13 @@ export function Tickets() {
                     <h2 className="etiqueta-campo" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                       {ESTADO_TICKET[columna]}<span className="mono">{lista.length}</span>
                     </h2>
+                    {columna === 'resuelto' && puedeCerrar && lista.length > 1 && (
+                      <button type="button" className="enlace-boton" style={{ alignSelf: 'flex-start' }}
+                        onClick={() => cambiarParametros({ cierre: '1' })}>Cerrar varios</button>
+                    )}
                     <div className="desplazable bajo" style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 2 }}>
                     {lista.map((t) => (
-                      <button key={t.folio} type="button" className="ficha-ticket" aria-pressed={!modoNuevo && t.folio === seleccionado} onClick={() => elegir(t.folio)}>
+                      <button key={t.folio} type="button" className="ficha-ticket" aria-pressed={!modoNuevo && !modoCierre && t.folio === seleccionado} onClick={() => elegir(t.folio)}>
                         <span style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'center' }}>
                           <span className="mono" style={{ fontSize: 13, fontWeight: 500 }}>{t.folio}</span>
                           <Etiqueta tono={PRIORIDAD[t.prioridad].tono}>{PRIORIDAD[t.prioridad].texto}</Etiqueta>
@@ -72,13 +78,76 @@ export function Tickets() {
             </div>
           )}
         </section>
-        <aside className="tarjeta tarjeta-relleno angosto desplazable" aria-label={modoNuevo ? 'Nuevo ticket' : 'Detalle del ticket'}>
-          {modoNuevo
+        <aside className="tarjeta tarjeta-relleno angosto desplazable" aria-label={modoNuevo ? 'Nuevo ticket' : modoCierre ? 'Cierre de tickets' : 'Detalle del ticket'}>
+          {modoCierre
+            ? <CierreMasivo key={(tickets.data ?? []).length} resueltos={(tickets.data ?? []).filter((t) => t.estado === 'resuelto')} alCancelar={() => cambiarParametros({})} />
+            : modoNuevo
             ? <FormularioTicket parametros={parametros} alCrear={elegir} alCancelar={() => cambiarParametros({})} />
             : seleccionado ? <DetalleTicket folio={seleccionado} /> : <EstadoVacio titulo="Sin tickets" texto="Los tickets se levantan desde una alerta o un sensor." />}
         </aside>
       </main>
     </>
+  );
+}
+
+function CierreMasivo({ resueltos, alCancelar }: { resueltos: Ticket[]; alCancelar: () => void }) {
+  const clienteConsultas = useQueryClient();
+  const [marcados, cambiarMarcados] = useState<Set<string>>(() => new Set(resueltos.map((t) => t.folio)));
+  const [comentario, cambiarComentario] = useState('');
+  const cerrar = useMutation({
+    mutationFn: (cuerpo: object) => peticion<{ cerrados: string[]; omitidos: string[] }>('/tickets/cierre-masivo', { metodo: 'POST', cuerpo }),
+    onSuccess: () => clienteConsultas.invalidateQueries({ queryKey: ['tickets'] }),
+  });
+  const seleccion = resueltos.filter((t) => marcados.has(t.folio)).map((t) => t.folio);
+
+  if (cerrar.data) {
+    const { cerrados, omitidos } = cerrar.data;
+    return (
+      <div className="formulario">
+        <h2>Cierre de tickets</h2>
+        <AvisoExito>{cerrados.length} tickets cerrados. Cada creador recibió el aviso en su bandeja.</AvisoExito>
+        {omitidos.length > 0 && <p className="secundario" style={{ fontSize: 14 }}>Sin cambios porque ya no estaban resueltos: {omitidos.join(', ')}.</p>}
+        <button type="button" className="boton-secundario" style={{ alignSelf: 'flex-start' }} onClick={alCancelar}>Volver al tablero</button>
+      </div>
+    );
+  }
+
+  function alternar(folio: string) {
+    const siguiente = new Set(marcados);
+    if (siguiente.has(folio)) siguiente.delete(folio); else siguiente.add(folio);
+    cambiarMarcados(siguiente);
+  }
+
+  function enviar(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    cerrar.mutate({ folios: seleccion, comentario: comentario.trim() });
+  }
+
+  return (
+    <form className="formulario" onSubmit={enviar}>
+      <h2>Cerrar tickets resueltos</h2>
+      <p className="secundario" style={{ fontSize: 14 }}>Confirma que revisaste la solución. Cada ticket guarda tu comentario en su historial.</p>
+      {resueltos.length === 0 ? <EstadoVacio titulo="No hay tickets resueltos" /> : (
+        <fieldset style={{ border: '1px solid var(--borde)', borderRadius: 8, margin: 0, padding: '8px 12px', display: 'flex', flexDirection: 'column' }}>
+          <legend style={{ fontSize: 13, fontWeight: 600, padding: '0 4px' }}>Resueltos ({resueltos.length})</legend>
+          {resueltos.map((t) => (
+            <label key={t.folio} style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 44, fontSize: 14, cursor: 'pointer' }}>
+              <input type="checkbox" className="casilla" checked={marcados.has(t.folio)} onChange={() => alternar(t.folio)} />
+              <span className="mono" style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{t.folio}</span><span>{t.titulo}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <div className="campo">
+        <label htmlFor="c-comentario">Comentario de revisión</label>
+        <textarea id="c-comentario" rows={3} required minLength={3} maxLength={2000} value={comentario} onChange={(e) => cambiarComentario(e.target.value)} />
+      </div>
+      <AvisoError error={cerrar.error} />
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button type="submit" className="boton" disabled={seleccion.length === 0 || cerrar.isPending}>Cerrar {seleccion.length} tickets</button>
+        <button type="button" className="boton-secundario" onClick={alCancelar}>Cancelar</button>
+      </div>
+    </form>
   );
 }
 

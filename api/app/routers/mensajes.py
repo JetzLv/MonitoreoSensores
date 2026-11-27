@@ -22,6 +22,11 @@ async def no_leidos(db=Depends(obtener_db), usuario: Usuario = Depends(solo_sesi
     return {"total": await repo.no_leidos(db, usuario)}
 
 
+@enrutador.patch("/leidos", response_model=Conteo, summary="Marcar toda la bandeja como leída", responses=errores(401))
+async def marcar_todos(db=Depends(obtener_db), usuario: Usuario = Depends(solo_sesion)):
+    return {"total": await repo.marcar_todos(db, usuario)}
+
+
 @enrutador.patch("/{mensaje_id}/leido", status_code=204, summary="Marcar como leído", responses=errores(401, 404))
 async def marcar_leido(mensaje_id: str, db=Depends(obtener_db), usuario: Usuario = Depends(solo_sesion)):
     if not await repo.marcar_leido(db, usuario, mensaje_id):

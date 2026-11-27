@@ -7,7 +7,7 @@ from ..dependencias import Usuario, autorizar, obtener_db, obtener_eventos, obte
 from ..repositories import sensores as repo_sensores
 from ..repositories import tickets as repo
 from ..schemas.comun import errores
-from ..schemas.gestion import EstadoTicket, Ticket, TicketActualizar, TicketCrear
+from ..schemas.gestion import CierreMasivo, EstadoTicket, ResultadoCierre, Ticket, TicketActualizar, TicketCrear
 
 enrutador = APIRouter(prefix="/tickets", tags=["Tickets"])
 
@@ -20,6 +20,25 @@ def _remitente(u: Usuario) -> Remitente:
 async def listar(pg=Depends(obtener_pg), usuario: Usuario = Depends(solo_sesion), estado: EstadoTicket | None = None,
                  asignados_a_mi: bool = False, sensor_id: str | None = Query(None, max_length=10)):
     return await repo.listar(pg, estado, usuario.id if asignados_a_mi else None, sensor_id)
+
+
+@enrutador.post("/cierre-masivo", response_model=ResultadoCierre, summary="Cerrar varios tickets resueltos",
+              description="Cierra los tickets resueltos de la lista con el mismo comentario. "
+                          "Los que no existen o no están resueltos se devuelven en omitidos.",
+              responses=errores(401, 403, 422))
+async def cerrar_varios(datos: CierreMasivo, pg=Depends(obtener_pg), eventos=Depends(obtener_eventos),
+                        usuario: Usuario = Depends(autorizar("monitorista", "administrador", permitir_api_key=False))):
+    cerrados, omitidos = [], []
+    for folio in dict.fromkeys(datos.folios):
+        resultado, id_creador = await repo.actualizar(pg, folio, "cerrado", False, datos.comentario, usuario.id)
+        if resultado != "ok":
+            omitidos.append(folio)
+            continue
+        cerrados.append(folio)
+        await publicar.mensaje(eventos, EventoMensaje(
+            tipo="ticket_actualizado", para_usuario=id_creador, de=_remitente(usuario),
+            referencia={"ticket_folio": folio}, asunto=f"{folio} ahora está cerrado", cuerpo=datos.comentario))
+    return {"cerrados": cerrados, "omitidos": omitidos}
 
 
 @enrutador.get("/{folio}", response_model=Ticket, summary="Detalle con historial", responses=errores(401, 404))

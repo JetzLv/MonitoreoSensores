@@ -1,9 +1,17 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Severidad = Literal["media", "alta", "critica"]
+
+
+class AtencionMasiva(BaseModel):
+    ids: list[str] = Field(min_length=1, max_length=200, examples=[["665f1c2e9b1e8a0012345678"]])
+
+
+class ResultadoAtencion(BaseModel):
+    atendidas: int
 
 
 class SensorReferencia(BaseModel):

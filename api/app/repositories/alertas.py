@@ -14,6 +14,15 @@ async def listar(db, filtros: dict, limite: int) -> list[dict]:
     return [_salida(d) async for d in cursor]
 
 
+async def atender_varias(db, ids: list[str], atendida_por: str) -> int:
+    validos = [ObjectId(i) for i in ids if ObjectId.is_valid(i)]
+    resultado = await db.alertas.update_many(
+        {"_id": {"$in": validos}, "estado": "abierta"},
+        {"$set": {"estado": "atendida", "atendida_por": atendida_por, "atendida_en": datetime.now(timezone.utc)}},
+    )
+    return resultado.modified_count
+
+
 async def atender(db, alerta_id: str, atendida_por: str) -> tuple[str, dict | None]:
     try:
         id_objeto = ObjectId(alerta_id)

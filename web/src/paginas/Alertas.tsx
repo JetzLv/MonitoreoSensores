@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { consulta, peticion } from '../api/cliente';
 import type { Alerta, Severidad } from '../api/tipos';
-import { AvisoError, EncabezadoPagina, Esqueleto, EstadoVacio, Etiqueta, IndicadorVivo } from '../componentes/Comunes';
+import { AvisoError, AvisoExito, EncabezadoPagina, Esqueleto, EstadoVacio, Etiqueta, IndicadorVivo } from '../componentes/Comunes';
 import { hora, NOMBRE_METRICA, SEVERIDAD, valorConUnidad } from '../formato';
 import { useSesion } from '../sesion/ContextoSesion';
 import { useIntervalo } from '../sesion/ContextoVivo';
@@ -39,7 +39,27 @@ export function Alertas() {
     },
   });
 
+  const [marcadas, cambiarMarcadas] = useState<Set<string>>(new Set());
+  const [aviso, cambiarAviso] = useState('');
+  const atenderVarias = useMutation({
+    mutationFn: (ids: string[]) => peticion<{ atendidas: number }>('/alertas', { metodo: 'PATCH', cuerpo: { ids } }),
+    onSuccess: ({ atendidas }) => {
+      cambiarMarcadas(new Set());
+      cambiarAviso(`${atendidas} alertas atendidas. Los sensores sin otras alertas abiertas vuelven a Normal en el tablero.`);
+      clienteConsultas.invalidateQueries({ queryKey: ['alertas'] });
+      clienteConsultas.invalidateQueries({ queryKey: ['estado-sensores'] });
+    },
+  });
+
   const puedeAtender = tieneRol('monitorista', 'administrador');
+  const abiertasVisibles = (alertas.data ?? []).filter((a) => a.estado === 'abierta').map((a) => a.id);
+  const seleccion = abiertasVisibles.filter((id) => marcadas.has(id));
+  const todasMarcadas = abiertasVisibles.length > 0 && seleccion.length === abiertasVisibles.length;
+  const alternar = (id: string) => {
+    const siguiente = new Set(marcadas);
+    if (siguiente.has(id)) siguiente.delete(id); else siguiente.add(id);
+    cambiarMarcadas(siguiente);
+  };
   const puedeLevantar = tieneRol('monitorista', 'administrador');
 
   return (
@@ -63,14 +83,33 @@ export function Alertas() {
             <span id="ayuda-sensor" className="ayuda">{sensor && !sensorValido ? 'Formato: TMP-001' : ' '}</span>
           </div>
         </div>
-        <AvisoError error={alertas.error ?? atender.error} />
+        <AvisoError error={alertas.error ?? atender.error ?? atenderVarias.error} />
+        {aviso && <AvisoExito>{aviso}</AvisoExito>}
         <div className="tarjeta tabla-caja desplazable bajo">
+          {puedeAtender && abiertasVisibles.length > 0 && (
+            <div className="barra-seleccion">
+              <label>
+                <input type="checkbox" className="casilla" checked={todasMarcadas}
+                  onChange={() => cambiarMarcadas(new Set(todasMarcadas ? [] : abiertasVisibles))} />
+                Seleccionar abiertas visibles
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                <span className="secundario" style={{ fontSize: 14 }} aria-live="polite">{seleccion.length} seleccionadas</span>
+                <button type="button" className="boton-secundario" disabled={seleccion.length === 0} onClick={() => cambiarMarcadas(new Set())}>Limpiar</button>
+                <button type="button" className="boton" disabled={seleccion.length === 0 || atenderVarias.isPending}
+                  onClick={() => { cambiarAviso(''); atenderVarias.mutate(seleccion); }}>
+                  <Check size={16} aria-hidden />Atender seleccionadas
+                </button>
+              </div>
+            </div>
+          )}
           {alertas.isPending ? <div style={{ padding: 20 }}><Esqueleto filas={6} /></div>
             : alertas.data?.length === 0 ? <EstadoVacio titulo="Sin alertas con estos filtros" texto="Prueba con otro estado o severidad." />
             : (
               <table style={{ minWidth: 820 }}>
                 <thead>
                   <tr>
+                    {puedeAtender && <th scope="col" style={{ width: 44 }}><span className="solo-lector">Seleccionar</span></th>}
                     <th scope="col">Hora</th><th scope="col">Sensor</th><th scope="col">Ubicación</th><th scope="col">Métrica</th>
                     <th scope="col">Valor / umbral</th><th scope="col">Severidad</th><th scope="col">Estado</th>
                     <th scope="col"><span className="solo-lector">Acciones</span></th>
@@ -79,6 +118,12 @@ export function Alertas() {
                 <tbody>
                   {(alertas.data ?? []).map((a) => (
                     <tr key={a.id}>
+                      {puedeAtender && (
+                        <td>{a.estado === 'abierta' && (
+                          <input type="checkbox" className="casilla" checked={marcadas.has(a.id)} onChange={() => alternar(a.id)}
+                            aria-label={`Seleccionar alerta de ${a.sensor.id}, ${NOMBRE_METRICA[a.metrica] ?? a.metrica}`} />
+                        )}</td>
+                      )}
                       <td className="mono">{hora(a.ts_lectura)}</td>
                       <td><Link className="mono" to={`/sensores/${a.sensor.id}`} style={{ fontWeight: 500 }}>{a.sensor.id}</Link></td>
                       <td className="secundario">Edificio {a.sensor.ubicacion.edificio}</td>

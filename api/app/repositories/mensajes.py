@@ -26,6 +26,12 @@ async def no_leidos(db, usuario) -> int:
     return await db.mensajes.count_documents({**_filtro(usuario), "leido_por": {"$ne": usuario.id}})
 
 
+async def marcar_todos(db, usuario) -> int:
+    resultado = await db.mensajes.update_many({**_filtro(usuario), "leido_por": {"$ne": usuario.id}},
+                                              {"$addToSet": {"leido_por": usuario.id}})
+    return resultado.modified_count
+
+
 async def marcar_leido(db, usuario, mensaje_id: str) -> bool:
     try:
         id_objeto = ObjectId(mensaje_id)

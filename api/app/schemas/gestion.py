@@ -30,6 +30,8 @@ class UsuarioCrear(BaseModel):
 
 
 class UsuarioActualizar(BaseModel):
+    nombre: str | None = Field(None, min_length=2, max_length=80)
+    correo: str | None = Field(None, pattern=CORREO, max_length=120)
     rol: Rol | None = None
     activo: bool | None = None
     contrasena: str | None = Field(None, min_length=10, max_length=128)
@@ -47,6 +49,16 @@ class TicketCrear(BaseModel):
     sensor_id: str = Field(pattern=r"^(TMP|ENE|AIR)-\d{3}$", examples=["TMP-010"])
     alerta_id: str | None = Field(None, pattern=r"^[0-9a-f]{24}$")
     prioridad: PrioridadTicket = "media"
+
+
+class CierreMasivo(BaseModel):
+    folios: list[str] = Field(min_length=1, max_length=100, examples=[["TK-00001", "TK-00005"]])
+    comentario: str = Field(min_length=3, max_length=2000, examples=["Revisado en sitio; lecturas estables."])
+
+
+class ResultadoCierre(BaseModel):
+    cerrados: list[str]
+    omitidos: list[str]
 
 
 class TicketActualizar(BaseModel):

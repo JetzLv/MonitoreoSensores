@@ -1,3 +1,4 @@
+import hashlib
 import os
 import secrets
 
@@ -18,6 +19,10 @@ class Usuario(BaseModel):
 
 
 USUARIO_API_KEY = Usuario(id=0, nombre="Servicio (API key)", correo="", rol="administrador")
+
+
+def huella_sesion(correo: str, hash_password: str) -> str:
+    return hashlib.sha256(f"{correo.lower()}|{hash_password}".encode()).hexdigest()[:16]
 
 
 def obtener_db(peticion: Request):
@@ -42,9 +47,11 @@ async def _usuario_de_sesion(peticion: Request) -> Usuario | None:
         return None
     async with peticion.app.state.pg.connection() as conexion:
         fila = await (await conexion.execute(
-            "SELECT u.id_usuario, u.nombre, u.correo, r.nombre FROM usuario u JOIN rol r USING (id_rol) "
+            "SELECT u.id_usuario, u.nombre, u.correo, r.nombre, u.hash_password FROM usuario u JOIN rol r USING (id_rol) "
             "WHERE u.id_usuario = %s AND u.activo", (int(datos["sub"]),))).fetchone()
-    return Usuario(id=fila[0], nombre=fila[1], correo=fila[2], rol=fila[3]) if fila else None
+    if not fila or not secrets.compare_digest(datos.get("hu", ""), huella_sesion(fila[2], fila[4])):
+        return None
+    return Usuario(id=fila[0], nombre=fila[1], correo=fila[2], rol=fila[3])
 
 
 def autorizar(*roles: str, permitir_api_key: bool = True):

@@ -146,6 +146,12 @@ p { margin: 0; }
 .boton-secundario:hover { background: var(--superficie-tenue); color: var(--texto); }
 .boton:disabled, .boton-secundario:disabled { opacity: 0.6; cursor: progress; }
 .chico { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.casilla { width: 20px; height: 20px; accent-color: var(--texto); cursor: pointer; }
+.barra-seleccion { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--borde); background: var(--superficie-tenue); }
+.barra-seleccion label { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.enlace-boton { border: 0; background: none; padding: 0 4px; min-height: 36px; color: var(--enlace); font: 600 13px system-ui, sans-serif; cursor: pointer; text-transform: none; letter-spacing: 0; }
+.enlace-boton:hover { text-decoration: underline; }
+.enlace-boton:disabled { color: var(--texto-secundario); cursor: not-allowed; text-decoration: none; }
 .pastillas { display: flex; flex-wrap: wrap; gap: 8px; }
 .pastilla { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--borde-control); background: var(--superficie); color: var(--texto); font: 600 13px system-ui, sans-serif; cursor: pointer; }
 .pastilla[aria-pressed="true"] { background: var(--primario); border-color: var(--primario); color: var(--sobre-primario); }
@@ -162,7 +168,7 @@ p { margin: 0; }
 .aviso-error { background: var(--critico-fondo); color: var(--critico-texto); }
 .aviso-ok { background: var(--ok-fondo); color: var(--ok-texto); }
 
-.tabla-caja { overflow-x: auto; }
+.tabla-caja { overflow-x: auto; position: relative; }
 table { border-collapse: collapse; width: 100%; font-size: 14px; }
 th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--texto-secundario); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--borde); background: var(--fondo); }
 td { padding: 10px 12px; border-bottom: 1px solid var(--superficie-tenue); vertical-align: middle; }
