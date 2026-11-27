@@ -1,0 +1,33 @@
+digraph A {
+rankdir=TB; bgcolor="white"; fontname="Helvetica"; nodesep=0.45; ranksep=0.42; newrank=true;
+node [shape=box, style="rounded,filled", fillcolor="#E0F2FE", color="#0369A1", fontname="Helvetica", fontsize=10];
+edge [color="#475569", fontname="Helvetica", fontsize=9];
+inicio [shape=circle, label="", width=0.25, style=filled, fillcolor="#1E293B", color="#1E293B"];
+fin [shape=doublecircle, label="", width=0.2, style=filled, fillcolor="#1E293B", color="#1E293B"];
+descartar [shape=doublecircle, label="", width=0.2, style=filled, fillcolor="#1E293B", color="#1E293B"];
+subgraph cluster_sim { label="Simulador"; style=rounded; color="#94A3B8"; fontcolor="#334155";
+  generar [label="Generar lectura del sensor"]; publicar [label="Publicar en exchange telemetria"]; }
+subgraph cluster_w { label="Worker"; style=rounded; color="#94A3B8"; fontcolor="#334155";
+  validar [label="Validar esquema y rangos físicos"];
+  valido [shape=diamond, label="¿Válida?", fillcolor="#FFFFFF", style=filled];
+  errores [label="Enviar a q.ingesta.errores\n(DLX)"];
+  guardar [label="Guardar en lecturas\n(lote de 100 o 1 s)"];
+  umbral [shape=diamond, label="¿Rebasa\numbral?", fillcolor="#FFFFFF", style=filled];
+  alerta [label="Registrar alerta y\npublicar alerta.<severidad>"];
+  bandeja [label="Entregar mensaje a la bandeja\n(rol monitorista)"]; }
+subgraph cluster_m { label="Monitorista"; style=rounded; color="#94A3B8"; fontcolor="#334155";
+  revisar [label="Revisar alerta en tablero o bandeja"];
+  requiere [shape=diamond, label="¿Requiere\nsoporte?", fillcolor="#FFFFFF", style=filled];
+  atender [label="Marcar alerta como atendida"];
+  ticket [label="Levantar ticket\n(PostgreSQL)"];
+  cerrar [label="Cerrar ticket resuelto"]; }
+subgraph cluster_s { label="Soporte"; style=rounded; color="#94A3B8"; fontcolor="#334155";
+  tomar [label="Tomar ticket (en proceso)"]; resolver [label="Resolver y comentar"]; }
+inicio -> generar -> publicar -> validar -> valido;
+valido -> errores [label="no"]; errores -> descartar;
+valido -> guardar [label="sí"]; guardar -> umbral;
+umbral -> fin [label="no"];
+umbral -> alerta [label="sí"]; alerta -> bandeja -> revisar -> requiere;
+requiere -> atender [label="no"]; atender -> fin;
+requiere -> ticket [label="sí"]; ticket -> tomar -> resolver -> cerrar -> atender;
+}

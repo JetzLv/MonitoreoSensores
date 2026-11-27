@@ -3,7 +3,7 @@ rankdir=LR; bgcolor="white"; fontname="Helvetica"; compound=true; nodesep=0.35; 
 node [shape=box, style="rounded,filled", fillcolor="#F4F6F8", color="#5A6B7B", fontname="Helvetica", fontsize=11];
 edge [color="#5A6B7B", fontname="Helvetica", fontsize=9];
 user [label="Usuarios\nadmin · monitorista · soporte", shape=box, fillcolor="#FFFFFF"];
-subgraph cluster_front { label="Interfaz web (React + Vite)"; style=rounded; color="#0EA5E9"; fontcolor="#0369A1";
+subgraph cluster_front { label="Interfaz web (React + Vite, servida por nginx)"; style=rounded; color="#0EA5E9"; fontcolor="#0369A1";
   ui [label="Dashboard · Sensores · Alertas\nTickets · Bandeja de mensajes", fillcolor="#E0F2FE"]; }
 subgraph cluster_api { label="API FastAPI"; style=rounded; color="#1E293B";
   auth [label="Autenticación JWT\n(cookie httpOnly) y roles"];

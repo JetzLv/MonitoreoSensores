@@ -4,16 +4,16 @@ node [shape=box3d, style=filled, fillcolor="#F4F6F8", color="#5A6B7B", fontname=
 edge [color="#5A6B7B", fontname="Helvetica", fontsize=9];
 usr [label="Usuarios\n(navegador, cualquier red)", shape=box, fillcolor="#FFFFFF"];
 cf [label="Cloudflare\nHTTPS · dominio público", fillcolor="#FFF7ED", color="#C2410C"];
-subgraph cluster_pc { label="Equipo de Jetz (Windows + Docker Desktop) = servidor"; style=rounded; color="#1E293B";
+subgraph cluster_pc { label="Equipo personal (Windows + Docker Desktop) = servidor"; style=rounded; color="#1E293B";
   adm [label="Navegador local\nSwagger · panel RabbitMQ · Compass", shape=box, fillcolor="#FFFFFF"];
   subgraph cluster_dc { label="docker compose · red interna iot-monitor_default"; style=dashed;
     tun [label="cloudflared\n(sin puertos abiertos)", fillcolor="#FFF7ED"];
-    web [label="web · nginx\nReact compilado\nproxy /api → api", fillcolor="#E0F2FE"];
+    web [label="web · nginx :8080\nReact compilado\nproxy /api → api", fillcolor="#E0F2FE"];
     api [label="api · FastAPI :8000"];
     w [label="worker"]; s [label="simulator"];
-    r [label="rabbitmq :5672"]; m [label="mongo :27017"]; p [label="postgres :5432", fillcolor="#EDE9FE"]; } }
+    r [label="rabbitmq :5672"]; m [label="mongo :27017\n(host 27018)"]; p [label="postgres :5432\n(sin puerto en host)", fillcolor="#EDE9FE"]; } }
 usr -> cf [label="https://…"]; cf -> tun [label="túnel saliente cifrado", dir=back];
 tun -> web [label="único servicio expuesto"]; web -> api [label="/api"];
 api -> m; api -> p; api -> r; w -> m; w -> r; s -> r; s -> m;
-adm -> api [label="127.0.0.1", style=dashed]; adm -> r [label="127.0.0.1:15672", style=dashed]; adm -> m [label="127.0.0.1", style=dashed];
+adm -> web [label="127.0.0.1:8080", style=dashed]; adm -> api [label="127.0.0.1:8000 /docs", style=dashed]; adm -> r [label="127.0.0.1:15672", style=dashed]; adm -> m [label="127.0.0.1:27018", style=dashed];
 }
